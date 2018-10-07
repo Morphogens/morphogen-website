@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title></title>
+
+<style>
+    body { font-family: sans-serif; }
+    canvas {
+        display: block; margin: auto;
+        border: 1px solid;
+    }
+</style>
+
+<body>
+<script>
+
+    function sum(array) {
+        return array.reduce((a, b) => a + b, 0);
+    }
+
+    function min(array) {
+        return array.reduce((a, b) => Math.min(a, b));
+    }
+    function max(array) {
+        return array.reduce((a, b) => Math.max(a, b));
+    }
+
+    let [ W, H ]= [ 1028, 256 ]
+    // let [ W, H ]= [ 10, 10 ]
+    let canvas = document.createElement("canvas")
+    document.body.appendChild(canvas)
+    let ctx = canvas.getContext("2d")
+
+    canvas.id = "canvas";
+    canvas.width = W;
+    canvas.height = H;
+
+    ctx.font = "bold 150px Arial";
+
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = 'black';
+    ctx.fillText("MORPHOGEN", 15, 180);
+
+
+    let imgData = ctx.getImageData(0, 0, W, H)
+
+    for (let s = 0; s < 7; s++) {
+        let next = imgData.data.slice()//new Uint8ClampedArray(4 * W * H);
+
+        for (let y=1; y < H-1; y++) {
+            for (let x=1; x < W-1; x++) {
+
+                if (imgData.data[ 4 * (W*y + x-1)] < 10 ||
+                    imgData.data[ 4 * (W*y + x+1)] < 10 ||
+                    imgData.data[ 4 * (W*(y-1) + x)] < 10 ||
+                    imgData.data[ 4 * (W*(y+1) + x)] < 10)
+                {
+                    let i = 4 * (W*y + x);
+                    next[i] = 0
+                    next[i+1] = 0
+                    next[i+2] = 0
+                    next[i+3] = 255
+                }
+
+            }
+        }
+        for (let i = 0; i < W*H*4; i++) {
+            imgData.data[i] = next[i]
+        }
+        // console.log(sum(imgData.data), sum(next))
+
+    }
+    ctx.putImageData(imgData, 0, 0);
+
+</script>
+</body>
+

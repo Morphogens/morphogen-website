@@ -10,7 +10,7 @@
     canvas {
         display: block; margin: auto;
         /*border: 1px solid;*/
-        /*width: 100vw;*/
+        max-width: 100vw;
     }
 </style>
 
@@ -83,20 +83,27 @@ uniform sampler2D u_image;
 uniform vec2 u_size;
 uniform int show;
 
-const float COLOR_MIN = 0.15, COLOR_MAX = 0.35;
+const float COLOR_MIN = 0.0, COLOR_MAX = 0.3;
 //const float COLOR_MIN = 0.0, COLOR_MAX = 1.0;
 
+const vec4 GREEN = vec4( 0.0, 1.0, 0.0, 1.0 );
+const vec4 WHITE = vec4( 1.0, 1.0, 1.0, 1.0 );
+const vec4 RED   = vec4( 1.0, 0.0, 0.0, 1.0 );
+const vec4 PURPLE = vec4(153.0/255.0, 51.0/255.0, 153.0/255.0, 1.0);
+
+float remap( float minval, float maxval, float curval ) {
+    return ( curval - minval ) / ( maxval - minval );
+}
+
 void main() {
-    float v1 = (COLOR_MAX - texture2D(u_image, gl_FragCoord.xy / u_size).y) / (COLOR_MAX - COLOR_MIN);
-    float v2 = (COLOR_MAX - texture2D(u_image, gl_FragCoord.xy / u_size).w) / (COLOR_MAX - COLOR_MIN);
+    float v1 = remap(COLOR_MIN, COLOR_MAX, texture2D(u_image, gl_FragCoord.xy / u_size).y);
+    float v2 = remap(COLOR_MIN, COLOR_MAX, texture2D(u_image, gl_FragCoord.xy / u_size).w);
 
     if (show == 1) {
-        //gl_FragColor = vec4(1, 1.0-v2, 1.0-v2, 1);
-        gl_FragColor = vec4(v2, v2, v2, 1);
+        gl_FragColor = mix( WHITE, PURPLE, remap( 0.5, 1.0, v2 ) );
     } else if (show == 2) {
-        gl_FragColor = vec4(v1, v1, v1, 1);
+        gl_FragColor = mix( WHITE, PURPLE, remap( 0.5, 1.0, v1 ) );
     } else if (show == 3) {
-        //gl_FragColor = vec4(vmax, vmax, vmax,  1);
         gl_FragColor = vec4(v1, v2, 0.5,  1);
 
     } else {
@@ -133,9 +140,9 @@ function init() {
     var gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
     checkCompatibility(gl);
 
-    var vertex_shader = createShader(gl, gl.VERTEX_SHADER, "vertex-shader"),
+    var vertex_shader   = createShader(gl, gl.VERTEX_SHADER,   "vertex-shader"),
         timestep_shader = createShader(gl, gl.FRAGMENT_SHADER, "timestep-shader"),
-        render_shader = createShader(gl, gl.FRAGMENT_SHADER, "render-shader");
+        render_shader   = createShader(gl, gl.FRAGMENT_SHADER, "render-shader");
 
     var timestep_prog = createAndLinkProgram(gl, vertex_shader, timestep_shader),
         render_prog = createAndLinkProgram(gl, vertex_shader, render_shader);
@@ -151,9 +158,6 @@ function init() {
     gl.uniform2f(gl.getUniformLocation(render_prog, "u_size"), W, H);
     locations.show_outside = gl.getUniformLocation(render_prog, "show")
     gl.uniform1i(locations.show_outside, show_value);
-
-
-
 
     gl.useProgram(timestep_prog);
     loadVertexData(gl, timestep_prog);
@@ -201,10 +205,8 @@ function init() {
         function renderloop(timeStamp) {
             if (reset) {
                 reset = false
-                // This probably isnt the best way to do this.
                 initial_state = make_random_state(img_thin, img_fat)
-                t1 = newTexture(gl, initial_state)
-                fb1 = newFramebuffer(gl, t1)
+                write_texture(gl, t1, initial_state)
             }
 
             gl.useProgram(timestep_prog);
@@ -231,55 +233,47 @@ function init() {
 
 function make_random_state(img_thin, img_fat) {
     var a = new Float32Array(4 * W * H);
-    {
-        const canvas = document.createElement('canvas')
-        canvas.width = W
-        canvas.height = H
-        let ctx = canvas.getContext('2d')
+    const canvas = document.createElement('canvas')
+    canvas.width = W
+    canvas.height = H
+    let ctx = canvas.getContext('2d')
 
-        ctx.scale(1, -1)
-        ctx.drawImage(img_thin, 0, -H, W, H)
-
-        let imgData = ctx.getImageData(0,0, W, H).data
-
-        for (let y=0; y<H; y++) {
-            for (let x=0; x<W; x++) {
-                let i = W*y + x;
-
-                if ((imgData[i*4 + 0] < 100) && Math.random() > 0.9) {
-                    a[4*i + 2] = 0.5 + Math.random() * 0.2 - 0.01;
-                    a[4*i + 3] = 0.25 + Math.random() * 0.2 - 0.01;
-                } else {
-                    a[4*i + 2] = 1.0;
-                    a[4*i + 3] = 0;
-                }
+    ctx.scale(1, -1)
+    ctx.drawImage(img_thin, 0, -H, W, H)
+    let imgData = ctx.getImageData(0,0, W, H).data
+    for (let y=0; y<H; y++) {
+        for (let x=0; x<W; x++) {
+            let i = W*y + x;
+            if ((imgData[i*4 + 0] < 100) && Math.random() > 0.9) {
+                a[4*i + 2] = 0.5 + Math.random() * 0.2 - 0.01;
+                a[4*i + 3] = 0.25 + Math.random() * 0.2 - 0.01;
+            } else {
+                a[4*i + 2] = 1.0;
+                a[4*i + 3] = 0;
             }
         }
     }
-    {
-        const canvas2 = document.createElement('canvas')
-        canvas2.width = W
-        canvas2.height = H
-        var ctx2 = canvas2.getContext('2d')
-
-        ctx2.scale(1, -1)
-        ctx2.drawImage(img_fat, 0, -H, W, H)
-        var imgData2 = ctx2.getImageData(0,0, W, H).data
-
-        for (let y=0; y<H; y++) {
-            for (let x=0; x<W; x++) {
-                let i = W*y + x;
-                if (imgData2[i*4] > 100 && Math.random() > 0.8) {
-                    a[4*i + 0] = 0.5 + Math.random() * 0.2 - 0.01;
-                    a[4*i + 1] = 0.25 + Math.random() * 0.2 - 0.01;
-                } else {
-                    a[4*i + 0] = 1.0;
-                    a[4*i + 1] = 0;
-                }
+    ctx.clearRect(0, 0, W, H)
+    ctx.drawImage(img_fat, 0, -H, W, H)
+    var imgData2 = ctx.getImageData(0,0, W, H).data
+    for (let y=0; y<H; y++) {
+        for (let x=0; x<W; x++) {
+            let i = W*y + x;
+            if (imgData2[i*4] > 100 && Math.random() > 0.8) {
+                a[4*i + 0] = 0.5 + Math.random() * 0.2 - 0.01;
+                a[4*i + 1] = 0.25 + Math.random() * 0.2 - 0.01;
+            } else {
+                a[4*i + 0] = 1.0;
+                a[4*i + 1] = 0;
             }
         }
     }
     return a
+}
+
+function write_texture(gl, texture, array) {
+    gl.bindTexture(gl.TEXTURE_2D, texture)
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, W, H, 0, gl.RGBA, gl.FLOAT, array)
 }
 
 // Create, initialise, and bind a new texture

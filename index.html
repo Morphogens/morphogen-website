@@ -27,6 +27,8 @@ precision mediump float;
 uniform sampler2D u_image;
 uniform vec2 u_size;
 uniform float scale;
+uniform float time;
+uniform int decay;
 
 const float F = 0.037, K = 0.06;
 //const float F = 0.029, K = 0.057;
@@ -36,8 +38,8 @@ float D_a = 0.2*scale, D_b = 0.1*scale;
 
 const float TIMESTEP = 1.0;
 
-float rand(vec2 co){
-    return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+float rand(vec2 co) {
+    return fract(sin(dot(co.xy, vec2(12.9898,78.233))) * (43758.5453 + time));
 }
 
 void main() {
@@ -69,6 +71,11 @@ void main() {
 
     val1 += delta * TIMESTEP;
     val2 += delta2 * TIMESTEP;
+
+    if (decay == 1 && abs(rand(gl_FragCoord.xy)) < 0.00001) {
+        val1.x *= 0.5;
+        val2.x *= 0.5;
+    }
 
     if (val1.y > val2.y) {
         gl_FragColor = vec4(val1.x, val1.y, val2.x/1.0, val2.y/2.0);
@@ -168,6 +175,7 @@ function init() {
     var show_value = 1
     var scale_value = 0.4
     var reset = false
+    var decay = false
     var colorA = hexToRgb("#1861b3")
     var colorB = hexToRgb("#b32a17")
 
@@ -183,6 +191,8 @@ function init() {
     loadVertexData(gl, timestep_prog);
     gl.uniform2f(gl.getUniformLocation(timestep_prog, "u_size"), W, H);
     locations.scale = gl.getUniformLocation(timestep_prog, "scale")
+    locations.time = gl.getUniformLocation(timestep_prog, "time")
+    locations.decay = gl.getUniformLocation(timestep_prog, "decay")
 
     gl.uniform1f(locations.scale, scale_value);
 
@@ -196,6 +206,7 @@ function init() {
         colorA: "#1861b3",
         colorB: "#b32a17",
         restart: () => { reset = true },
+        decay: decay,
     };
     gui.add(params, 'scale', 0.3, 0.75).onChange((v) => {
         scale_value = v
@@ -205,6 +216,7 @@ function init() {
     gui.add(params, 'show_outside').onChange((v) => show_value ^= 2 )
     gui.addColor(params, 'colorA').onChange((v) => colorA = hexToRgb(v) )
     gui.addColor(params, 'colorB').onChange((v) => colorB = hexToRgb(v) )
+    gui.add(params, 'decay').onChange((v) => decay = v )
     gui.add(params, 'restart')
 
     Promise.all([
@@ -247,7 +259,12 @@ function init() {
 
             gl.useProgram(timestep_prog);
             gl.uniform1f(locations.scale, scale_value);
-            for (var i=0; i<5; i++) {
+            gl.uniform1f(locations.time, timeStamp);
+            gl.uniform1i(locations.decay, decay);
+
+            // const num_steps = Math.min(10, Math.floor(timeStamp / 1000)+2)
+            // console.log((num_steps))
+            for (var i=0; i<10; i++) {
                 gl.bindTexture(gl.TEXTURE_2D, (i%2==0)?t1:t2);
                 gl.bindFramebuffer(gl.FRAMEBUFFER, (i%2==0)?fb2:fb1);
                 gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);

@@ -28,8 +28,9 @@ uniform sampler2D u_image;
 uniform vec2 u_size;
 uniform float scale;
 
-//const float F = 0.037, K = 0.06;
-const float F = 0.029, K = 0.057;
+const float F = 0.037, K = 0.06;
+//const float F = 0.029, K = 0.057;
+//const float F = 0.062, K = 0.061;
 
 float D_a = 0.2*scale, D_b = 0.1*scale;
 
@@ -82,14 +83,15 @@ precision mediump float;
 uniform sampler2D u_image;
 uniform vec2 u_size;
 uniform int show;
+uniform vec4 colorA;
+uniform vec4 colorB;
 
-const float COLOR_MIN = 0.0, COLOR_MAX = 0.3;
+const float COLOR_MIN = 0.1, COLOR_MAX = 0.3;
 //const float COLOR_MIN = 0.0, COLOR_MAX = 1.0;
 
-const vec4 GREEN = vec4( 0.0, 1.0, 0.0, 1.0 );
+const vec4 BLACK = vec4( 0.0, 0.0, 0.0, 1.0 );
 const vec4 WHITE = vec4( 1.0, 1.0, 1.0, 1.0 );
-const vec4 RED   = vec4( 1.0, 0.0, 0.0, 1.0 );
-const vec4 PURPLE = vec4(153.0/255.0, 51.0/255.0, 153.0/255.0, 1.0);
+const vec4 GRAY  = vec4( 0.9, 0.9, 0.9, 1.0 );
 
 float remap( float minval, float maxval, float curval ) {
     return ( curval - minval ) / ( maxval - minval );
@@ -100,12 +102,15 @@ void main() {
     float v2 = remap(COLOR_MIN, COLOR_MAX, texture2D(u_image, gl_FragCoord.xy / u_size).w);
 
     if (show == 1) {
-        gl_FragColor = mix( WHITE, PURPLE, remap( 0.5, 1.0, v2 ) );
+        gl_FragColor = mix( WHITE, colorA, v2 );
     } else if (show == 2) {
-        gl_FragColor = mix( WHITE, PURPLE, remap( 0.5, 1.0, v1 ) );
+        gl_FragColor = mix( WHITE, colorB, v1 );
     } else if (show == 3) {
-        gl_FragColor = vec4(v1, v2, 0.5,  1);
-
+        if (v1 < v2) {
+            gl_FragColor = mix( WHITE, colorA, v2 );
+        } else {
+            gl_FragColor = mix( WHITE, colorB, v1 );
+        }
     } else {
         gl_FragColor = vec4(1, 1, 1, 1);
     }
@@ -129,6 +134,17 @@ function load_image(src) {
     })
 }
 
+function hexToRgb(hex) {
+    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    if (!result) { return null }
+    return  [
+        parseInt(result[1], 16) / 255.0,
+        parseInt(result[2], 16) / 255.0,
+        parseInt(result[3], 16) / 255.0,
+        1.0
+    ]
+}
+
 function init() {
     canvas = document.createElement("canvas");
 
@@ -150,19 +166,24 @@ function init() {
 
     var locations = {}
     var show_value = 1
-    var scale_value = 0.5
+    var scale_value = 0.4
     var reset = false
+    var colorA = hexToRgb("#1861b3")
+    var colorB = hexToRgb("#b32a17")
 
     gl.useProgram(render_prog);
     loadVertexData(gl, render_prog);
     gl.uniform2f(gl.getUniformLocation(render_prog, "u_size"), W, H);
     locations.show_outside = gl.getUniformLocation(render_prog, "show")
+    locations.colorA = gl.getUniformLocation(render_prog, "colorA")
+    locations.colorB = gl.getUniformLocation(render_prog, "colorB")
     gl.uniform1i(locations.show_outside, show_value);
 
     gl.useProgram(timestep_prog);
     loadVertexData(gl, timestep_prog);
     gl.uniform2f(gl.getUniformLocation(timestep_prog, "u_size"), W, H);
     locations.scale = gl.getUniformLocation(timestep_prog, "scale")
+
     gl.uniform1f(locations.scale, scale_value);
 
     var gui = new dat.GUI({
@@ -172,6 +193,8 @@ function init() {
         scale: 0.5,
         show_outside: false,
         show_inside: true,
+        colorA: "#1861b3",
+        colorB: "#b32a17",
         restart: () => { reset = true },
     };
     gui.add(params, 'scale', 0.3, 0.75).onChange((v) => {
@@ -180,18 +203,27 @@ function init() {
     })
     gui.add(params, 'show_inside').onChange((v) => show_value ^= 1 )
     gui.add(params, 'show_outside').onChange((v) => show_value ^= 2 )
+    gui.addColor(params, 'colorA').onChange((v) => colorA = hexToRgb(v) )
+    gui.addColor(params, 'colorB').onChange((v) => colorB = hexToRgb(v) )
     gui.add(params, 'restart')
 
     Promise.all([
         load_image('thin.png'),
-        load_image('fat.png')
-    ]).then(([img_thin, img_fat]) => {
+        load_image('fat.png'),
+        load_image('thin2.png'),
+        load_image('fat2.png'),
+
+    ]).then(([img_thin, img_fat, img_thin2, img_fat2]) => {
         let initial_state = make_random_state(img_thin, img_fat);
+        let next_state = make_random_state(img_thin2, img_fat2);
 
         var t1 = newTexture(gl, initial_state),
             t2 = newTexture(gl, null),
             fb1 = newFramebuffer(gl, t1),
             fb2 = newFramebuffer(gl, t2);
+
+        const mask_array = new Float32Array(4 * W * H)
+        const mask_texture = newTexture(gl, mask_array)
 
         // Check the hardware can render to a float framebuffer
         // (https://developer.mozilla.org/en-US/docs/Web/WebGL/WebGL_best_practices)
@@ -208,6 +240,10 @@ function init() {
                 initial_state = make_random_state(img_thin, img_fat)
                 write_texture(gl, t1, initial_state)
             }
+            if (window.switch_state) {
+                write_texture(gl, t1, next_state)
+                window.switch_state = false
+            }
 
             gl.useProgram(timestep_prog);
             gl.uniform1f(locations.scale, scale_value);
@@ -219,10 +255,12 @@ function init() {
 
             gl.useProgram(render_prog);
             gl.uniform1i(locations.show_outside, show_value);
+            gl.uniform4fv(locations.colorA, colorA);
+            gl.uniform4fv(locations.colorB, colorB);
+
             gl.bindTexture(gl.TEXTURE_2D, t1);
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
             gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-
             requestAnimationFrame(renderloop)
         }
 

@@ -1,7 +1,8 @@
-var W = 1024, H = 512;
-var canvas;
+var W = window.innerWidth
+var H = window.innerHeight
+var canvas
 
-function arr_sum (arr) {
+function arr_sum(arr) {
     return arr.reduce((a, b) => a+b)
 }
 
@@ -19,12 +20,34 @@ canvas_tmp.width = W
 canvas_tmp.height = H
 let ctx_tmp = canvas_tmp.getContext('2d')
 ctx_tmp.scale(1, -1)
+
 function image_to_arr(image) {
-    ctx_tmp.clearRect(0, 0, W, H)
-    ctx_tmp.drawImage(image, 0, -H, W, H)
+    /* Create an array of the size of the canavs.
+       The image is centered and fills the canvas with white padding.
+    */
+    const aspect_image  = image.width / image.height
+    const aspect_canvas = W / H
+
+    ctx_tmp.globalAlpha = 1.0;
+    ctx_tmp.fillStyle = "white"
+    ctx_tmp.fillRect(0, 0, W, H)
+    ctx_tmp.fillRect(0, -H, W, H)
+
+    // ctx_tmp.scale(1, -1)
+    if (aspect_image < aspect_canvas) { // The canvas is wider than the image
+        let width = canvas.height * aspect_image
+        let pad_left = (W - width) * 0.5
+        ctx_tmp.drawImage(image, pad_left, -H, width, H)
+
+    } else { // The canvas is taller than the image
+        let height = canvas.width / aspect_image
+        let pad_top = (H - height) * 0.5
+        ctx_tmp.drawImage(image, 0, -height - pad_top, canvas.width, height)
+    }
+    // ctx_tmp.scale(1, 1)
+
     return ctx_tmp.getImageData(0, 0, W, H).data
 }
-
 
 function load_image_array(src) {
     return load_image(src).then(image => {
@@ -44,7 +67,6 @@ function hexToRgb(hex) {
 }
 
 function init() {
-    // window.scrollY = 0
     canvas = document.getElementById("canvas");
 
     canvas.id = "canvas";
@@ -55,12 +77,12 @@ function init() {
     var gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
     checkCompatibility(gl);
 
-    var vertex_shader   = createShader(gl, gl.VERTEX_SHADER,   "vertex-shader"),
-        timestep_shader = createShader(gl, gl.FRAGMENT_SHADER, "compute-shader"),
-        render_shader   = createShader(gl, gl.FRAGMENT_SHADER, "render-shader");
+    var vertex_shader  = createShader(gl, gl.VERTEX_SHADER,   "vertex-shader"),
+        compute_shader = createShader(gl, gl.FRAGMENT_SHADER, "compute-shader"),
+        render_shader  = createShader(gl, gl.FRAGMENT_SHADER, "render-shader");
 
-    var timestep_prog = createAndLinkProgram(gl, vertex_shader, timestep_shader),
-        render_prog = createAndLinkProgram(gl, vertex_shader, render_shader);
+    var compute_prog = createAndLinkProgram(gl, vertex_shader, compute_shader),
+        render_prog  = createAndLinkProgram(gl, vertex_shader, render_shader);
 
 
     var locations = {}
@@ -71,7 +93,6 @@ function init() {
     var colorA = "#0000e8"
     var colorB = "#e3e3ff"
 
-
     gl.useProgram(render_prog);
     loadVertexData(gl, render_prog);
     gl.uniform2f(gl.getUniformLocation(render_prog, "u_size"), W, H);
@@ -80,12 +101,12 @@ function init() {
     locations.colorB = gl.getUniformLocation(render_prog, "colorB")
     gl.uniform1i(locations.show_outside, show_value);
 
-    gl.useProgram(timestep_prog);
-    loadVertexData(gl, timestep_prog);
-    gl.uniform2f(gl.getUniformLocation(timestep_prog, "u_size"), W, H);
-    locations.scale = gl.getUniformLocation(timestep_prog, "scale")
-    locations.time = gl.getUniformLocation(timestep_prog, "time")
-    locations.decay = gl.getUniformLocation(timestep_prog, "decay")
+    gl.useProgram(compute_prog);
+    loadVertexData(gl, compute_prog);
+    gl.uniform2f(gl.getUniformLocation(compute_prog, "u_size"), W, H);
+    locations.scale = gl.getUniformLocation(compute_prog, "scale")
+    locations.time = gl.getUniformLocation(compute_prog, "time")
+    locations.decay = gl.getUniformLocation(compute_prog, "decay")
 
     gl.uniform1f(locations.scale, scale_value);
 
@@ -125,8 +146,8 @@ function init() {
         load_image_array('fat.png'),
         load_image_array('thin2.png'),
         load_image_array('fat2.png'),
-        load_image_array('thin4.png'),
-        load_image_array('fat4.png'),
+        load_image_array('thin5.png'),
+        load_image_array('fat5.png'),
     ]).then(([ img_thin, img_fat, img_thin2, img_fat2, img_thin3, img_fat3 ]) => {
         let initial_state = make_random_state(img_thin, img_fat);
 
@@ -135,12 +156,12 @@ function init() {
             fb1 = newFramebuffer(gl, t1),
             fb2 = newFramebuffer(gl, t2);
 
-        const mask_array = new Float32Array(4 * W * H)
-        const mask_texture = newTexture(gl, mask_array)
+        // const mask_array = new Float32Array(4 * W * H)
+        // const mask_texture = newTexture(gl, mask_array)
 
         // Check the hardware can render to a float framebuffer
         // (https://developer.mozilla.org/en-US/docs/Web/WebGL/WebGL_best_practices)
-        gl.useProgram(timestep_prog);
+        gl.useProgram(compute_prog);
         gl.bindFramebuffer(gl.FRAMEBUFFER, fb1);
         var fb_status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
         if (fb_status != gl.FRAMEBUFFER_COMPLETE) {
@@ -167,7 +188,7 @@ function init() {
             }
 
 
-            gl.useProgram(timestep_prog);
+            gl.useProgram(compute_prog);
             gl.uniform1f(locations.scale, scale_value);
             gl.uniform1f(locations.time, timeStamp);
             gl.uniform1i(locations.decay, decay);
@@ -225,7 +246,6 @@ function init() {
         requestAnimationFrame(renderloop)
     })
 }
-
 
 
 function create_transition(last_state, arr_thin1, arr_fat1, arr_thin2, arr_fat2) {
@@ -304,11 +324,15 @@ function write_texture(gl, texture, array) {
 // Create, initialise, and bind a new texture
 function newTexture(gl, initial_state) {
     var texture = gl.createTexture();
+
     gl.bindTexture(gl.TEXTURE_2D, texture);
+
+    // This allows it to be a non power of 2 texture.
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, W, H, 0, gl.RGBA, gl.FLOAT, initial_state);
 
     return texture;

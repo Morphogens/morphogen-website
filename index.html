@@ -35,7 +35,7 @@ void main() {
 }
 </script>
 
-<script type="x-webgl/x-fragment-shader" id="timestep-shader">
+<script type="x-webgl/x-fragment-shader" id="compute-shader">
 precision mediump float;
 uniform sampler2D u_image;
 uniform vec2 u_size;
@@ -62,41 +62,33 @@ void main() {
          s = p + vec2(0.0, -1.0),
          w = p + vec2(-1.0, 0.0);
 
-    vec2 val1 = texture2D(u_image, p / u_size).zw,
-         laplacian = texture2D(u_image, n / u_size).zw
-        + texture2D(u_image, e / u_size).zw
-        + texture2D(u_image, s / u_size).zw
-        + texture2D(u_image, w / u_size).zw
-        - 4.0 * val1;
+    vec4 val = texture2D(u_image, p / u_size);
 
-    vec2 delta = vec2(D_a * laplacian.x - val1.x*val1.y*val1.y + F * (1.0-val1.x),
-                      D_b * laplacian.y + val1.x*val1.y*val1.y - (K+F) * val1.y);
+    vec4 lap = texture2D(u_image, n / u_size)
+        + texture2D(u_image, e / u_size)
+        + texture2D(u_image, s / u_size)
+        + texture2D(u_image, w / u_size)
+        - 4.0 * val;
 
-    vec2 val2 = texture2D(u_image, p / u_size).xy;
-    vec2 laplacian2 = texture2D(u_image, n / u_size).xy
-        + texture2D(u_image, e / u_size).xy
-        + texture2D(u_image, s / u_size).xy
-        + texture2D(u_image, w / u_size).xy
-        - 4.0 * val2;
+    vec4 delta = vec4(D_a * lap.x - val.x*val.y*val.y + F * (1.0-val.x),
+                      D_b * lap.y + val.x*val.y*val.y - (K+F) * val.y,
+                      D_a * lap.z - val.z*val.w*val.w + F * (1.0-val.z),
+                      D_b * lap.w + val.z*val.w*val.w - (K+F) * val.w);
 
-    vec2 delta2 = vec2(D_a * laplacian2.x - val2.x*val2.y*val2.y + F * (1.0-val2.x),
-                       D_b * laplacian2.y + val2.x*val2.y*val2.y - (K+F) * val2.y);
-
-    val1 += delta * TIMESTEP;
-    val2 += delta2 * TIMESTEP;
+    val += delta * TIMESTEP;
 
     if (decay == 1 && abs(rand(gl_FragCoord.xy)) < 0.000001) {
-        val1.x *= 0.5;
-        val2.x *= 0.5;
+        val.x *= 0.5;
+        val.z *= 0.5;
     }
 
     /*  Make the two systems mutually exclusive by having the dominant
         suppress the other.
     */
-    if (val1.y > val2.y) {
-        gl_FragColor = vec4(val1.x, val1.y, val2.x, val2.y/2.0);
+    if (val.y > val.w) {
+        gl_FragColor = vec4(val.x, val.y, val.z, val.w/2.0);
     } else {
-        gl_FragColor = vec4(val1.x, val1.y/2.0, val2.x, val2.y);
+        gl_FragColor = vec4(val.x, val.y/2.0, val.z, val.w);
     }
 }
 </script>

@@ -56,7 +56,7 @@ function init() {
     checkCompatibility(gl);
 
     var vertex_shader   = createShader(gl, gl.VERTEX_SHADER,   "vertex-shader"),
-        timestep_shader = createShader(gl, gl.FRAGMENT_SHADER, "timestep-shader"),
+        timestep_shader = createShader(gl, gl.FRAGMENT_SHADER, "compute-shader"),
         render_shader   = createShader(gl, gl.FRAGMENT_SHADER, "render-shader");
 
     var timestep_prog = createAndLinkProgram(gl, vertex_shader, timestep_shader),
@@ -172,16 +172,24 @@ function init() {
             gl.uniform1f(locations.time, timeStamp);
             gl.uniform1i(locations.decay, decay);
 
-            for (var i=0; i<20; i++) {
+            t = performance.now()
+
+            for (var i=0; i < 20; i++) {
                 gl.bindTexture(gl.TEXTURE_2D, (i%2==0)?t1:t2);
                 gl.bindFramebuffer(gl.FRAMEBUFFER, (i%2==0)?fb2:fb1);
                 gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
             }
 
+            // time_sum += performance.now() - t
+            // time_count += 1
+            // if (time_count == time_samples) {
+            //     console.log(`Compute Time = ${(time_sum / time_samples)}`)
+            //     time_count = 0
+            //     time_sum = 0
+            // }
+
             let new_scroll_state = Math.floor(window.scrollY / 600)
             new_scroll_state = Math.min(2, new_scroll_state)
-
-            // console.log(new_scroll_state)
 
             if (scroll_state != new_scroll_state) {
                 gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t1, 0);

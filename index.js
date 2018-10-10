@@ -114,6 +114,11 @@ function init() {
     gui.add(params, 'restart')
 
     let scroll_state = Math.floor(window.scrollY / 1000)
+    var t, previousTime
+    t = previousTime = performance.now()
+    const time_samples = 100
+    var time_count = 0
+    var time_sum = 0
 
     Promise.all([
         load_image_array('thin.png'),
@@ -149,13 +154,24 @@ function init() {
                 write_texture(gl, t1, initial_state)
             }
 
+            t = performance.now();
+            var elapsed = t - previousTime
+            previousTime = t
+            time_sum += elapsed
+            time_count += 1
+
+            if (time_count == time_samples) {
+                console.log(`FPS = ${1000 / (time_sum / time_samples)}`)
+                time_count = 0
+                time_sum = 0
+            }
+
+
             gl.useProgram(timestep_prog);
             gl.uniform1f(locations.scale, scale_value);
             gl.uniform1f(locations.time, timeStamp);
             gl.uniform1i(locations.decay, decay);
 
-            // const num_steps = Math.min(10, Math.floor(timeStamp / 1000)+2)
-            // console.log((num_steps))
             for (var i=0; i<20; i++) {
                 gl.bindTexture(gl.TEXTURE_2D, (i%2==0)?t1:t2);
                 gl.bindFramebuffer(gl.FRAMEBUFFER, (i%2==0)?fb2:fb1);
@@ -194,6 +210,7 @@ function init() {
             gl.bindTexture(gl.TEXTURE_2D, t1);
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
             gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
             requestAnimationFrame(renderloop)
         }
 

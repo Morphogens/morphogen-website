@@ -47,7 +47,7 @@ const float F = 0.037, K = 0.06;
 //const float F = 0.029, K = 0.057;
 //const float F = 0.062, K = 0.061;
 
-//float D_a = 0.2*scale, D_b = 0.1*scale;
+float D_a = 0.2*scale, D_b = 0.1*scale;
 
 const float TIMESTEP = 1.0;
 
@@ -69,7 +69,6 @@ void main() {
         + texture2D(u_image, w / u_size).zw
         - 4.0 * val1;
 
-    float D_a = 0.2*0.3, D_b = 0.1*0.3;
     vec2 delta = vec2(D_a * laplacian.x - val1.x*val1.y*val1.y + F * (1.0-val1.x),
                       D_b * laplacian.y + val1.x*val1.y*val1.y - (K+F) * val1.y);
 
@@ -80,10 +79,8 @@ void main() {
         + texture2D(u_image, w / u_size).xy
         - 4.0 * val2;
 
-    float D_a2 = 0.2*scale;
-    float D_b2 = 0.1*scale;
-    vec2 delta2 = vec2(D_a2 * laplacian2.x - val2.x*val2.y*val2.y + F * (1.0-val2.x),
-                       D_b2 * laplacian2.y + val2.x*val2.y*val2.y - (K+F) * val2.y);
+    vec2 delta2 = vec2(D_a * laplacian2.x - val2.x*val2.y*val2.y + F * (1.0-val2.x),
+                       D_b * laplacian2.y + val2.x*val2.y*val2.y - (K+F) * val2.y);
 
     val1 += delta * TIMESTEP;
     val2 += delta2 * TIMESTEP;
@@ -93,6 +90,9 @@ void main() {
         val2.x *= 0.5;
     }
 
+    /*  Make the two systems mutually exclusive by having the dominant
+        suppress the other.
+    */
     if (val1.y > val2.y) {
         gl_FragColor = vec4(val1.x, val1.y, val2.x, val2.y/2.0);
     } else {
@@ -112,17 +112,16 @@ uniform vec4 colorB;
 const float COLOR_MIN = 0.15, COLOR_MAX = 0.3;
 //const float COLOR_MIN = 0.0, COLOR_MAX = 1.0;
 
-const vec4 BLACK = vec4( 0.0, 0.0, 0.0, 1.0 );
 const vec4 WHITE = vec4( 1.0, 1.0, 1.0, 1.0 );
-const vec4 GRAY  = vec4( 0.9, 0.9, 0.9, 1.0 );
 
 float remap( float minval, float maxval, float curval ) {
     return ( curval - minval ) / ( maxval - minval );
 }
 
 void main() {
-    float v1 = remap(COLOR_MIN, COLOR_MAX, texture2D(u_image, gl_FragCoord.xy / u_size).y);
-    float v2 = remap(COLOR_MIN, COLOR_MAX, texture2D(u_image, gl_FragCoord.xy / u_size).w);
+    vec4 pixel = texture2D(u_image, gl_FragCoord.xy / u_size);
+    float v1 = remap(COLOR_MIN, COLOR_MAX, pixel.y);
+    float v2 = remap(COLOR_MIN, COLOR_MAX, pixel.w);
 
     if (show == 1) {
         gl_FragColor = mix( WHITE, colorA, v1 );

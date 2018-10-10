@@ -3,14 +3,27 @@
 <title>MORPHOGEN</title>
 
 <style>
+    html, body {
+        height: 100%;
+        /*overflow: hidden;*/
+    }
     body {
         margin: 0px;
         font-family: sans-serif;
     }
     canvas {
-        display: block; margin: auto;
+        /*display: block;*/
+        /*margin: auto;*/
         /*border: 1px solid;*/
-        max-width: 100vw;
+        width: 100vw;
+        position: fixed;
+    }
+    #scroll_height {
+        height: 3000px;
+        width: 100vw;
+        top: 0px;
+        /*overflow-y: scroll;*/
+        position: absolute;
     }
 </style>
 
@@ -34,7 +47,7 @@ const float F = 0.037, K = 0.06;
 //const float F = 0.029, K = 0.057;
 //const float F = 0.062, K = 0.061;
 
-float D_a = 0.2*scale, D_b = 0.1*scale;
+//float D_a = 0.2*scale, D_b = 0.1*scale;
 
 const float TIMESTEP = 1.0;
 
@@ -56,6 +69,7 @@ void main() {
         + texture2D(u_image, w / u_size).zw
         - 4.0 * val1;
 
+    float D_a = 0.2*0.3, D_b = 0.1*0.3;
     vec2 delta = vec2(D_a * laplacian.x - val1.x*val1.y*val1.y + F * (1.0-val1.x),
                       D_b * laplacian.y + val1.x*val1.y*val1.y - (K+F) * val1.y);
 
@@ -66,21 +80,23 @@ void main() {
         + texture2D(u_image, w / u_size).xy
         - 4.0 * val2;
 
-    vec2 delta2 = vec2(D_a * laplacian2.x - val2.x*val2.y*val2.y + F * (1.0-val2.x),
-                       D_b * laplacian2.y + val2.x*val2.y*val2.y - (K+F) * val2.y);
+    float D_a2 = 0.2*scale;
+    float D_b2 = 0.1*scale;
+    vec2 delta2 = vec2(D_a2 * laplacian2.x - val2.x*val2.y*val2.y + F * (1.0-val2.x),
+                       D_b2 * laplacian2.y + val2.x*val2.y*val2.y - (K+F) * val2.y);
 
     val1 += delta * TIMESTEP;
     val2 += delta2 * TIMESTEP;
 
-    if (decay == 1 && abs(rand(gl_FragCoord.xy)) < 0.00001) {
+    if (decay == 1 && abs(rand(gl_FragCoord.xy)) < 0.000001) {
         val1.x *= 0.5;
         val2.x *= 0.5;
     }
 
     if (val1.y > val2.y) {
-        gl_FragColor = vec4(val1.x, val1.y, val2.x/1.0, val2.y/2.0);
+        gl_FragColor = vec4(val1.x, val1.y, val2.x, val2.y/2.0);
     } else {
-        gl_FragColor = vec4(val1.x/1.0, val1.y/2.0, val2.x, val2.y);
+        gl_FragColor = vec4(val1.x, val1.y/2.0, val2.x, val2.y);
     }
 }
 </script>
@@ -93,7 +109,7 @@ uniform int show;
 uniform vec4 colorA;
 uniform vec4 colorB;
 
-const float COLOR_MIN = 0.1, COLOR_MAX = 0.3;
+const float COLOR_MIN = 0.15, COLOR_MAX = 0.3;
 //const float COLOR_MIN = 0.0, COLOR_MAX = 1.0;
 
 const vec4 BLACK = vec4( 0.0, 0.0, 0.0, 1.0 );
@@ -109,14 +125,14 @@ void main() {
     float v2 = remap(COLOR_MIN, COLOR_MAX, texture2D(u_image, gl_FragCoord.xy / u_size).w);
 
     if (show == 1) {
-        gl_FragColor = mix( WHITE, colorA, v2 );
+        gl_FragColor = mix( WHITE, colorA, v1 );
     } else if (show == 2) {
-        gl_FragColor = mix( WHITE, colorB, v1 );
+        gl_FragColor = mix( WHITE, colorB, v2 );
     } else if (show == 3) {
-        if (v1 < v2) {
-            gl_FragColor = mix( WHITE, colorA, v2 );
+        if (v2 < v1) {
+            gl_FragColor = mix( WHITE, colorA, v1 );
         } else {
-            gl_FragColor = mix( WHITE, colorB, v1 );
+            gl_FragColor = mix( WHITE, colorB, v2 );
         }
     } else {
         gl_FragColor = vec4(1, 1, 1, 1);
@@ -129,281 +145,7 @@ void main() {
 </head>
 
 <body>
-<script>
-var W = 1024, H = 512;
-var canvas;
-
-function load_image(src) {
-    let image = new Image();
-    image.src = src
-    return new Promise((resolve, reject) => {
-        image.onload = () => resolve(image)
-    })
-}
-
-function hexToRgb(hex) {
-    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    if (!result) { return null }
-    return  [
-        parseInt(result[1], 16) / 255.0,
-        parseInt(result[2], 16) / 255.0,
-        parseInt(result[3], 16) / 255.0,
-        1.0
-    ]
-}
-
-function init() {
-    canvas = document.createElement("canvas");
-
-    canvas.id = "canvas";
-    canvas.width = W;
-    canvas.height = H;
-    document.body.appendChild(canvas);
-
-    var gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
-    checkCompatibility(gl);
-
-    var vertex_shader   = createShader(gl, gl.VERTEX_SHADER,   "vertex-shader"),
-        timestep_shader = createShader(gl, gl.FRAGMENT_SHADER, "timestep-shader"),
-        render_shader   = createShader(gl, gl.FRAGMENT_SHADER, "render-shader");
-
-    var timestep_prog = createAndLinkProgram(gl, vertex_shader, timestep_shader),
-        render_prog = createAndLinkProgram(gl, vertex_shader, render_shader);
-
-
-    var locations = {}
-    var show_value = 1
-    var scale_value = 0.4
-    var reset = false
-    var decay = false
-    var colorA = hexToRgb("#1861b3")
-    var colorB = hexToRgb("#b32a17")
-
-    gl.useProgram(render_prog);
-    loadVertexData(gl, render_prog);
-    gl.uniform2f(gl.getUniformLocation(render_prog, "u_size"), W, H);
-    locations.show_outside = gl.getUniformLocation(render_prog, "show")
-    locations.colorA = gl.getUniformLocation(render_prog, "colorA")
-    locations.colorB = gl.getUniformLocation(render_prog, "colorB")
-    gl.uniform1i(locations.show_outside, show_value);
-
-    gl.useProgram(timestep_prog);
-    loadVertexData(gl, timestep_prog);
-    gl.uniform2f(gl.getUniformLocation(timestep_prog, "u_size"), W, H);
-    locations.scale = gl.getUniformLocation(timestep_prog, "scale")
-    locations.time = gl.getUniformLocation(timestep_prog, "time")
-    locations.decay = gl.getUniformLocation(timestep_prog, "decay")
-
-    gl.uniform1f(locations.scale, scale_value);
-
-    var gui = new dat.GUI({
-        height : 5 * 32 - 1
-    });
-    var params = {
-        scale: 0.5,
-        show_outside: false,
-        show_inside: true,
-        colorA: "#1861b3",
-        colorB: "#b32a17",
-        restart: () => { reset = true },
-        decay: decay,
-    };
-    gui.add(params, 'scale', 0.3, 0.75).onChange((v) => {
-        scale_value = v
-        reset = true
-    })
-    gui.add(params, 'show_inside').onChange((v) => show_value ^= 1 )
-    gui.add(params, 'show_outside').onChange((v) => show_value ^= 2 )
-    gui.addColor(params, 'colorA').onChange((v) => colorA = hexToRgb(v) )
-    gui.addColor(params, 'colorB').onChange((v) => colorB = hexToRgb(v) )
-    gui.add(params, 'decay').onChange((v) => decay = v )
-    gui.add(params, 'restart')
-
-    Promise.all([
-        load_image('thin.png'),
-        load_image('fat.png'),
-        load_image('thin2.png'),
-        load_image('fat2.png'),
-
-    ]).then(([img_thin, img_fat, img_thin2, img_fat2]) => {
-        let initial_state = make_random_state(img_thin, img_fat);
-        let next_state = make_random_state(img_thin2, img_fat2);
-
-        var t1 = newTexture(gl, initial_state),
-            t2 = newTexture(gl, null),
-            fb1 = newFramebuffer(gl, t1),
-            fb2 = newFramebuffer(gl, t2);
-
-        const mask_array = new Float32Array(4 * W * H)
-        const mask_texture = newTexture(gl, mask_array)
-
-        // Check the hardware can render to a float framebuffer
-        // (https://developer.mozilla.org/en-US/docs/Web/WebGL/WebGL_best_practices)
-        gl.useProgram(timestep_prog);
-        gl.bindFramebuffer(gl.FRAMEBUFFER, fb1);
-        var fb_status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
-        if (fb_status != gl.FRAMEBUFFER_COMPLETE) {
-            fail("Cannot render to framebuffer: " + fb_status);
-        }
-
-        function renderloop(timeStamp) {
-            if (reset) {
-                reset = false
-                initial_state = make_random_state(img_thin, img_fat)
-                write_texture(gl, t1, initial_state)
-            }
-            if (window.switch_state) {
-                write_texture(gl, t1, next_state)
-                window.switch_state = false
-            }
-
-            gl.useProgram(timestep_prog);
-            gl.uniform1f(locations.scale, scale_value);
-            gl.uniform1f(locations.time, timeStamp);
-            gl.uniform1i(locations.decay, decay);
-
-            // const num_steps = Math.min(10, Math.floor(timeStamp / 1000)+2)
-            // console.log((num_steps))
-            for (var i=0; i<10; i++) {
-                gl.bindTexture(gl.TEXTURE_2D, (i%2==0)?t1:t2);
-                gl.bindFramebuffer(gl.FRAMEBUFFER, (i%2==0)?fb2:fb1);
-                gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-            }
-
-            gl.useProgram(render_prog);
-            gl.uniform1i(locations.show_outside, show_value);
-            gl.uniform4fv(locations.colorA, colorA);
-            gl.uniform4fv(locations.colorB, colorB);
-
-            gl.bindTexture(gl.TEXTURE_2D, t1);
-            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-            gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-            requestAnimationFrame(renderloop)
-        }
-
-        requestAnimationFrame(renderloop)
-    })
-}
-
-
-function make_random_state(img_thin, img_fat) {
-    var a = new Float32Array(4 * W * H);
-    const canvas = document.createElement('canvas')
-    canvas.width = W
-    canvas.height = H
-    let ctx = canvas.getContext('2d')
-
-    ctx.scale(1, -1)
-    ctx.drawImage(img_thin, 0, -H, W, H)
-    let imgData = ctx.getImageData(0,0, W, H).data
-    for (let y=0; y<H; y++) {
-        for (let x=0; x<W; x++) {
-            let i = W*y + x;
-            if ((imgData[i*4 + 0] < 100) && Math.random() > 0.9) {
-                a[4*i + 2] = 0.5 + Math.random() * 0.2 - 0.01;
-                a[4*i + 3] = 0.25 + Math.random() * 0.2 - 0.01;
-            } else {
-                a[4*i + 2] = 1.0;
-                a[4*i + 3] = 0;
-            }
-        }
-    }
-    ctx.clearRect(0, 0, W, H)
-    ctx.drawImage(img_fat, 0, -H, W, H)
-    var imgData2 = ctx.getImageData(0,0, W, H).data
-    for (let y=0; y<H; y++) {
-        for (let x=0; x<W; x++) {
-            let i = W*y + x;
-            if (imgData2[i*4] > 100 && Math.random() > 0.8) {
-                a[4*i + 0] = 0.5 + Math.random() * 0.2 - 0.01;
-                a[4*i + 1] = 0.25 + Math.random() * 0.2 - 0.01;
-            } else {
-                a[4*i + 0] = 1.0;
-                a[4*i + 1] = 0;
-            }
-        }
-    }
-    return a
-}
-
-function write_texture(gl, texture, array) {
-    gl.bindTexture(gl.TEXTURE_2D, texture)
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, W, H, 0, gl.RGBA, gl.FLOAT, array)
-}
-
-// Create, initialise, and bind a new texture
-function newTexture(gl, initial_state) {
-    var texture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, W, H, 0, gl.RGBA, gl.FLOAT, initial_state);
-
-    return texture;
-}
-
-function newFramebuffer(gl, texture) {
-    var fb = gl.createFramebuffer();
-    gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
-
-    return fb;
-}
-
-function loadVertexData(gl, prog) {
-    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([ -1,-1, 1,-1, -1,1, 1,1 ]), gl.STATIC_DRAW);
-
-    var a_position = gl.getAttribLocation(prog, "a_position");
-    gl.enableVertexAttribArray(a_position);
-    gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
-}
-
-function createAndLinkProgram(gl, vertex_shader, fragment_shader) {
-    var prog = gl.createProgram();
-    gl.attachShader(prog, vertex_shader);
-    gl.attachShader(prog, fragment_shader);
-    gl.linkProgram(prog);
-    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
-        fail("Failed to link program: " + gl.getProgramInfoLog(prog));
-    }
-    return prog;
-}
-
-function createShader(gl, shader_type, shader_code_id) {
-    var shader = gl.createShader(shader_type);
-    gl.shaderSource(shader, document.getElementById(shader_code_id).text);
-    gl.compileShader(shader);
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-        var err = gl.getShaderInfoLog(shader);
-        fail("Failed to compile shader: " + err);
-    }
-    return shader
-}
-
-function checkCompatibility(gl) {
-    if (!gl) fail("WebGL is not supported");
-
-    var float_texture_ext = gl.getExtension("OES_texture_float");
-    if (!float_texture_ext) fail("Your browser does not support the WebGL extension OES_texture_float");
-    window.float_texture_ext = float_texture_ext; // Hold onto it
-
-    var max_texture_size = gl.getParameter(gl.MAX_TEXTURE_SIZE);
-    if (max_texture_size < 512) fail("Your browser only supports "+max_texture_size+"×"+max_texture_size+" WebGL textures");
-}
-
-function fail(message) {
-    var fail = document.createElement("p");
-    fail.id = "fail";
-    fail.appendChild(document.createTextNode(message));
-    document.body.removeChild(document.getElementById("canvas"));
-    document.body.appendChild(fail);
-    throw message;
-}
-
-init();
-</script>
-
+    <div id="scroll_height"></div>
+    <canvas id="canvas"></canvas>
+    <script type='text/javascript' src='index.js'></script>
 </body>

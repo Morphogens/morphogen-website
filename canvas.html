@@ -15,7 +15,7 @@
 <body>
 <script>
     let [ W, H ]= [ 1024, 512 ]
-    let fat = false
+    let fat = true
     // let [ W, H ]= [ 10, 10 ]
     let canvas = document.createElement("canvas")
     document.body.appendChild(canvas)
@@ -26,21 +26,27 @@
     canvas.height = H;
 
     ctx.font = "bold 150px Arial";
-    // ctx.scale(1, 2)
+    ctx.scale(1, 2)
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, W, H);
+
     ctx.fillStyle = 'black';
     // ctx.fillText("MORPHOGEN", 15, 180);
+
     // ctx.fillText("GENERATIVE", 15, 120);
     // ctx.fillText("DESIGN", 15, 240);
 
-    ctx.scale(2, 2)
-    ctx.font = "bold 300px Arial";
-    ctx.fillText("M", 120, 230);
+    ctx.fillText("LAB +", 15, 120);
+    ctx.fillText("STUDIO", 15, 240);
+
+
+    // ctx.scale(2, 2)
+    // ctx.font = "bold 300px Arial";
+    // ctx.fillText("M", 120, 230);
 
     let imgData = ctx.getImageData(0, 0, W, H)
     const draw_color = fat ? 0 : 255;
-    for (let s = 0; s < 30; s++) {
+    for (let s = 0; s < 7; s++) {
         let next = imgData.data.slice()//new Uint8ClampedArray(4 * W * H);
 
         for (let y=1; y < H-1; y++) {

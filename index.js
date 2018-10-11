@@ -66,6 +66,26 @@ function hexToRgb(hex) {
     ]
 }
 
+// function resize() {
+//   // Lookup the size the browser is displaying the canvas.
+//   var displayWidth  = canvas.clientWidth;
+//   var displayHeight = canvas.clientHeight;
+
+//   // Check if the canvas is not the same size.
+//   if (canvas.width  != displayWidth ||
+//       canvas.height != displayHeight) {
+
+//     // Make the canvas the same size
+//     canvas.width  = displayWidth;
+//     canvas.height = displayHeight;
+//   }
+// }
+
+function scroll_index(){
+    const y = document.getElementById('scroll_container').scrollTop
+    return Math.min(2, Math.floor(y / 600));
+}
+
 function init() {
     canvas = document.getElementById("canvas");
 
@@ -134,7 +154,9 @@ function init() {
     gui.add(params, 'decay').onChange((v) => decay = v )
     gui.add(params, 'restart')
 
-    let scroll_state = Math.floor(window.scrollY / 1000)
+    let scroll_i = scroll_index()
+    let last_scroll_i = scroll_i;
+
     var t, previousTime
     t = previousTime = performance.now()
     const time_samples = 100
@@ -142,107 +164,122 @@ function init() {
     var time_sum = 0
 
     Promise.all([
-        load_image_array('thin.png'),
-        load_image_array('fat.png'),
-        load_image_array('thin2.png'),
-        load_image_array('fat2.png'),
-        load_image_array('thin5.png'),
-        load_image_array('fat5.png'),
-    ]).then(([ img_thin, img_fat, img_thin2, img_fat2, img_thin3, img_fat3 ]) => {
-        let initial_state = make_random_state(img_thin, img_fat);
-
-        var t1 = newTexture(gl, initial_state),
+        load_image('img/thin.png'),
+        load_image('img/fat.png'),
+        load_image('img/thin2.png'),
+        load_image('img/fat2.png'),
+        load_image('img/thin5.png'),
+        load_image('img/fat5.png'),
+    ]).then(images => {
+        let arrays = images.map(image_to_arr)
+        let initial_state = make_random_state(arrays[2*scroll_i], arrays[2*scroll_i +1]);
+        let t1 = newTexture(gl, initial_state),
             t2 = newTexture(gl, null),
             fb1 = newFramebuffer(gl, t1),
             fb2 = newFramebuffer(gl, t2);
 
-        // const mask_array = new Float32Array(4 * W * H)
-        // const mask_texture = newTexture(gl, mask_array)
-
-        // Check the hardware can render to a float framebuffer
-        // (https://developer.mozilla.org/en-US/docs/Web/WebGL/WebGL_best_practices)
         gl.useProgram(compute_prog);
         gl.bindFramebuffer(gl.FRAMEBUFFER, fb1);
         var fb_status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
         if (fb_status != gl.FRAMEBUFFER_COMPLETE) {
             fail("Cannot render to framebuffer: " + fb_status);
         }
-        let current_state = [ img_thin, img_fat ]
+
         function renderloop(timeStamp) {
+            // Check for window resize.
+            if (gl.canvas.width  != window.innerWidth ||
+                gl.canvas.height != window.innerHeight) {
+
+                // W = window.innerWidth
+                // H = window.innerHeight
+                // gl.canvas.width  = W;
+                // gl.canvas.height = H;
+                // arrays = images.map(image_to_arr)
+
+                // console.log('resize', scroll_i)
+                // gl.bindFramebuffer(gl.FRAMEBUFFER, fb1);
+                // gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
+
+                // gl.bindFramebuffer(gl.FRAMEBUFFER, fb2);
+                // gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
+                window.location = '' // lolol lazy hack
+                // initial_state = make_random_state(arrays[2*scroll_i], arrays[2*scroll_i +1])
+                // t1 = newTexture(gl, initial_state),
+                // t2 = newTexture(gl, null)
+                // fb1 = newFramebuffer(gl, t1)
+                // fb2 = newFramebuffer(gl, t2)
+                // gl.useProgram(compute_prog)
+                // gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
+                // gl.useProgram(compute_prog);
+                // // gl.clear(gl.COLOR_BUFFER_BIT);
+
+                // t1 = newTexture(gl, initial_state),
+                // t2 = newTexture(gl, null),
+                // fb1 = newFramebuffer(gl, t1),
+                // fb2 = newFramebuffer(gl, t2);
+
+
+                // gl.bindFramebuffer(gl.FRAMEBUFFER, fb1);
+
+                // write_texture(gl, t1, initial_state)
+                // write_texture(gl, t2, initial_state)
+                // gl.bindFramebuffer(gl.FRAMEBUFFER, fb1);
+
+                // gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t1, 0)
+
+                // gl.bindFramebuffer(gl.FRAMEBUFFER, fb2);
+                // gl.viewport(0, 0, gl.canvas.width, gl.canvas.height)
+                // gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t2, 0)
+                // reset = true
+            }
             if (reset) {
+                console.log('reset')
                 reset = false
-                initial_state = make_random_state(img_thin, img_fat)
+                initial_state = make_random_state(arrays[2*scroll_i], arrays[2*scroll_i +1])
                 write_texture(gl, t1, initial_state)
             }
+            { // Do FPS stuff.
+                t = performance.now();
+                let elapsed = t - previousTime
+                previousTime = t
+                time_sum += elapsed
+                time_count += 1
 
-            t = performance.now();
-            var elapsed = t - previousTime
-            previousTime = t
-            time_sum += elapsed
-            time_count += 1
-
-            if (time_count == time_samples) {
-                console.log(`FPS = ${1000 / (time_sum / time_samples)}`)
-                time_count = 0
-                time_sum = 0
+                if (time_count == time_samples) {
+                    console.log(`FPS = ${1000 / (time_sum / time_samples)}`)
+                    time_count = 0
+                    time_sum = 0
+                }
             }
-
-
             gl.useProgram(compute_prog);
             gl.uniform1f(locations.scale, scale_value);
             gl.uniform1f(locations.time, timeStamp);
             gl.uniform1i(locations.decay, decay);
-
-            t = performance.now()
-
-            for (var i=0; i < 20; i++) {
+            for (var i=0; i < 10; i++) {
                 gl.bindTexture(gl.TEXTURE_2D, (i%2==0)?t1:t2);
                 gl.bindFramebuffer(gl.FRAMEBUFFER, (i%2==0)?fb2:fb1);
                 gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
             }
+            scroll_i = scroll_index()
 
-            // time_sum += performance.now() - t
-            // time_count += 1
-            // if (time_count == time_samples) {
-            //     console.log(`Compute Time = ${(time_sum / time_samples)}`)
-            //     time_count = 0
-            //     time_sum = 0
-            // }
-
-            let new_scroll_state = Math.floor(window.scrollY / 600)
-            new_scroll_state = Math.min(2, new_scroll_state)
-
-            if (scroll_state != new_scroll_state) {
+            if (scroll_i != last_scroll_i) {
                 gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t1, 0);
                 let pixels = new Float32Array(W * H * 4)
                 gl.readPixels(0,0, W, H, gl.RGBA, gl.FLOAT, pixels)
-
-                if (new_scroll_state == 0) {
-                    write_texture(gl, t1, create_transition(pixels, current_state[0], current_state[1], img_thin, img_fat))
-                    current_state = [ img_thin, img_fat ]
-                } else if (new_scroll_state == 1) {
-                    write_texture(gl, t1, create_transition(pixels, current_state[0], current_state[1], img_thin2, img_fat2))
-                    current_state = [ img_thin2, img_fat2 ]
-                } else if (new_scroll_state == 2) {
-                    write_texture(gl, t1, create_transition(pixels, current_state[0], current_state[1], img_thin3, img_fat3))
-                    current_state = [ img_thin3, img_fat3 ]
-                }
-                // window.switch_state = false
-                scroll_state = new_scroll_state
+                let [ last_thin, last_fat ] = [ arrays[2*last_scroll_i], arrays[2*last_scroll_i+1] ]
+                let [ next_thin, next_fat ] = [ arrays[2*scroll_i], arrays[2*scroll_i+1] ]
+                write_texture(gl, t1, create_transition(pixels, last_thin, last_fat, next_thin, next_fat))
+                last_scroll_i = scroll_i
             }
-
             gl.useProgram(render_prog);
             gl.uniform1i(locations.show_outside, show_value);
             gl.uniform4fv(locations.colorA, hexToRgb(colorA));
             gl.uniform4fv(locations.colorB, hexToRgb(colorB));
-
             gl.bindTexture(gl.TEXTURE_2D, t1);
             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
             gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-
             requestAnimationFrame(renderloop)
         }
-
         requestAnimationFrame(renderloop)
     })
 }
@@ -267,7 +304,7 @@ function create_transition(last_state, arr_thin1, arr_fat1, arr_thin2, arr_fat2)
         }
 
         if (new_seed) {
-            if (Math.random() > 0.1) {
+            if (Math.random() > 0.5) {
                 result[4*i + 0] = 0.5 + Math.random() * 0.2 - 0.01
                 result[4*i + 1] = 0.25 + Math.random() * 0.2 - 0.01
             } else {
@@ -316,85 +353,6 @@ function make_random_state(arr_thin, arr_fat) {
     return a
 }
 
-function write_texture(gl, texture, array) {
-    gl.bindTexture(gl.TEXTURE_2D, texture)
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, W, H, 0, gl.RGBA, gl.FLOAT, array)
-}
 
-// Create, initialise, and bind a new texture
-function newTexture(gl, initial_state) {
-    var texture = gl.createTexture();
-
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-
-    // This allows it to be a non power of 2 texture.
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, W, H, 0, gl.RGBA, gl.FLOAT, initial_state);
-
-    return texture;
-}
-
-function newFramebuffer(gl, texture) {
-    var fb = gl.createFramebuffer();
-    gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
-
-    return fb;
-}
-
-function loadVertexData(gl, prog) {
-    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([ -1,-1, 1,-1, -1,1, 1,1 ]), gl.STATIC_DRAW);
-
-    var a_position = gl.getAttribLocation(prog, "a_position");
-    gl.enableVertexAttribArray(a_position);
-    gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, 0, 0);
-}
-
-function createAndLinkProgram(gl, vertex_shader, fragment_shader) {
-    var prog = gl.createProgram();
-    gl.attachShader(prog, vertex_shader);
-    gl.attachShader(prog, fragment_shader);
-    gl.linkProgram(prog);
-    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
-        fail("Failed to link program: " + gl.getProgramInfoLog(prog));
-    }
-    return prog;
-}
-
-function createShader(gl, shader_type, shader_code_id) {
-    var shader = gl.createShader(shader_type);
-    gl.shaderSource(shader, document.getElementById(shader_code_id).text);
-    gl.compileShader(shader);
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-        var err = gl.getShaderInfoLog(shader);
-        fail("Failed to compile shader: " + err);
-    }
-    return shader
-}
-
-function checkCompatibility(gl) {
-    if (!gl) fail("WebGL is not supported");
-
-    var float_texture_ext = gl.getExtension("OES_texture_float");
-    if (!float_texture_ext) fail("Your browser does not support the WebGL extension OES_texture_float");
-    window.float_texture_ext = float_texture_ext; // Hold onto it
-
-    var max_texture_size = gl.getParameter(gl.MAX_TEXTURE_SIZE);
-    if (max_texture_size < 512) fail("Your browser only supports "+max_texture_size+"×"+max_texture_size+" WebGL textures");
-}
-
-function fail(message) {
-    var fail = document.createElement("p");
-    fail.id = "fail";
-    fail.appendChild(document.createTextNode(message));
-    document.body.removeChild(document.getElementById("canvas"));
-    document.body.appendChild(fail);
-    throw message;
-}
 
 init();

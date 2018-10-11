@@ -5,7 +5,7 @@
 <style>
     html, body {
         height: 100%;
-        /*overflow: hidden;*/
+        overflow: hidden;
     }
     body {
         margin: 0px;
@@ -18,12 +18,19 @@
         /*width: 100vw;*/
         position: fixed;
     }
+    #scroll_container {
+        position: absolute;
+        overflow-y: scroll;
+        width: 100vw;
+        height: 100vh;
+        z-index: 2;
+    }
     #scroll_height {
         height: 3000px;
         width: 100vw;
-        top: 0px;
+        /*top: 0px;*/
         /*overflow-y: scroll;*/
-        position: absolute;
+        /*position: absolute;*/
     }
 </style>
 
@@ -132,11 +139,17 @@ void main() {
 </script>
 
 <head>
+    <script type='text/javascript' src='gl_utils.js'></script>
     <script type='text/javascript' src='lib/dat.gui.min.js'></script>
 </head>
 
 <body>
-    <div id="scroll_height"></div>
+
+    <div id="scroll_container">
+        <div id="scroll_height"></div>
+    </div>
     <canvas id="canvas"></canvas>
+
+
     <script type='text/javascript' src='index.js'></script>
 </body>

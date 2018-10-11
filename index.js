@@ -107,10 +107,10 @@ function init() {
 
     var locations = {}
     var show_value = 3
-    var scale_value = 0.36
+    var scale_value = 0.30
     var reset = false
     var decay = false
-    var colorA = "#0000e8"
+    var colorA = "#0000e0"
     var colorB = "#e3e3ff"
 
     gl.useProgram(render_prog);
@@ -136,8 +136,8 @@ function init() {
     gui.closed  = true
     var params = {
         scale:scale_value,
-        show_outside: true,
-        show_inside: true,
+        show_outside: !!(show_value & 1<<1),
+        show_inside:  !!(show_value & 1),
         colorA: colorA,
         colorB: colorB,
         restart: () => { reset = true },
@@ -153,6 +153,7 @@ function init() {
     gui.addColor(params, 'colorB').onChange((v) => colorB = v )
     gui.add(params, 'decay').onChange((v) => decay = v )
     gui.add(params, 'restart')
+    gui.domElement.parentElement.style.zIndex = 3
 
     let scroll_i = scroll_index()
     let last_scroll_i = scroll_i;
@@ -265,7 +266,8 @@ function init() {
             if (scroll_i != last_scroll_i) {
                 gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t1, 0);
                 let pixels = new Float32Array(W * H * 4)
-                gl.readPixels(0,0, W, H, gl.RGBA, gl.FLOAT, pixels)
+                gl.readPixels(0, 0, W, H, gl.RGBA, gl.FLOAT, pixels)
+
                 let [ last_thin, last_fat ] = [ arrays[2*last_scroll_i], arrays[2*last_scroll_i+1] ]
                 let [ next_thin, next_fat ] = [ arrays[2*scroll_i], arrays[2*scroll_i+1] ]
                 write_texture(gl, t1, create_transition(pixels, last_thin, last_fat, next_thin, next_fat))
@@ -304,11 +306,11 @@ function create_transition(last_state, arr_thin1, arr_fat1, arr_thin2, arr_fat2)
         }
 
         if (new_seed) {
-            if (Math.random() > 0.5) {
+            if (Math.random() > 0.7) {
                 result[4*i + 0] = 0.5 + Math.random() * 0.2 - 0.01
                 result[4*i + 1] = 0.25 + Math.random() * 0.2 - 0.01
             } else {
-                result[4*i + 0] = 0
+                result[4*i + 0] = 1
                 result[4*i + 1] = 0
             }
 
@@ -323,8 +325,13 @@ function create_transition(last_state, arr_thin1, arr_fat1, arr_thin2, arr_fat2)
         }
 
         if (arr_thin1[4*i] < 100 && !new_bound) {
-            result[4*i + 2] = 0.5 + Math.random() * 0.2 - 0.01
-            result[4*i + 3] = 0.25 + Math.random() * 0.2 - 0.01
+            if (Math.random() > 0.7) {
+                result[4*i + 2] = 0.5 + Math.random() * 0.2 - 0.01
+                result[4*i + 3] = 0.25 + Math.random() * 0.2 - 0.01
+            } else {
+                result[4*i + 2] = 1
+                result[4*i + 3] = 0
+            }
         }
     }
     return result

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title></title>
+
+<style>
+    body { font-family: sans-serif; }
+    canvas {
+        display: block;
+        margin: auto;
+        border: 1px solid;
+        max-width: 100vw;
+    }
+</style>
+
+<body>
+<script>
+    let [ W, H ]= [ 512, 256 ]
+    let fat = true
+
+    // let [ W, H ]= [ 10, 10 ]
+    let canvas = document.createElement("canvas")
+    document.body.appendChild(canvas)
+    let ctx = canvas.getContext("2d")
+
+    canvas.id = "canvas";
+    canvas.width = W;
+    canvas.height = H;
+
+    ctx.font = "bold 75px Arial";
+    ctx.scale(1, 2)
+    ctx.fillStyle = 'red';
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.fillStyle = 'blue';
+
+    ctx.fillText("MORPHOGEN", 7, 90);
+
+    // ctx.fillText("GENERATIVE", 7, 60);
+    // ctx.fillText("DESIGN", 7, 120);
+    // ctx.fillText("CS + ARCH", 15, 120);
+    // ctx.fillText("+ ART + BIO", 15, 240);
+    // ctx.scale(2, 2)
+    // ctx.font = "bold 300px Arial";
+    // ctx.fillText("M", 120, 230);
+
+    let imgData = ctx.getImageData(0, 0, W, H)
+    let draw_color = 0
+    let steps = 4
+
+    // First grow the area
+    for (let s = 0; s < steps; s++) {
+        let next = imgData.data.slice()
+        for (let y=1; y < H-1; y++) {
+            for (let x=1; x < W-1; x++) {
+                let draw = (imgData.data[ 4 * (W*y + x-1)] < 10 ||
+                            imgData.data[ 4 * (W*y + x+1)] < 10 ||
+                            imgData.data[ 4 * (W*(y-1) + x)] < 10 ||
+                            imgData.data[ 4 * (W*(y+1) + x)] < 10)
+                if (draw) {
+                    let i = 4 * (W*y + x);
+                    next[i] = 0
+                    next[i+1] = 0
+                    next[i+2] = 255
+                    next[i+3] = 255
+                }
+
+            }
+        }
+        for (let i = 0; i < W*H*4; i++) {
+            imgData.data[i] = next[i]
+        }
+    }
+
+    ctx.putImageData(imgData, 0, 0)
+
+
+    ctx.fillStyle = '#FFFFFF'
+    ctx.fillText("MORPHOGEN", 7, 90)
+
+    ctx.fillStyle = '#00FF00'
+    ctx.fillText("MORPHOGEN", 7, 90)
+    ctx.fillText("MORPHOGEN", 7, 90)
+
+    // ctx.fillStyle = '#FFFFFF'
+    // ctx.fillText("GENERATIVE", 7, 60);
+    // ctx.fillText("DESIGN", 7, 120);
+    // ctx.fillStyle = '#00FF00'
+    // ctx.fillText("GENERATIVE", 7, 60);
+    // ctx.fillText("DESIGN", 7, 120);
+
+    imgData = ctx.getImageData(0, 0, W, H)
+    draw_color = 0 ;
+    steps = 5
+
+    // Shirnk the green area, filling with black.
+    for (let s = 0; s < steps; s++) {
+        let next = imgData.data.slice()
+
+        for (let y=1; y < H-1; y++) {
+            for (let x=1; x < W-1; x++) {
+                let draw = (imgData.data[2 + (4 * (W*y + x-1))] == 255 ||
+                            imgData.data[2 + (4 * (W*y + x+1))] == 255 ||
+                            imgData.data[2 + (4 * (W*(y-1) + x))] == 255 ||
+                            imgData.data[2 + (4 * (W*(y+1) + x))] == 255)
+
+                let green = imgData.data[1 + (4 * (W*y + x))] > 10
+
+                if (green && draw) {
+                    let i = 4 * (W*y + x);
+                    next[i] = 0
+                    next[i+1] = 0
+                    next[i+2] = 255
+                    next[i+3] = 255
+                }
+
+            }
+        }
+        for (let i = 0; i < W*H*4; i++) {
+            imgData.data[i] = next[i]
+        }
+    }
+    ctx.putImageData(imgData, 0, 0);
+
+
+</script>
+</body>
+

@@ -1,158 +1,49 @@
 <!DOCTYPE html>
-<meta charset="utf-8">
-<title>MORPHOGEN</title>
-
-<style>
-    html, body {
-        height: 100%;
-        overflow: hidden;
-    }
-    body {
-        margin: 0px;
-        font-family: sans-serif;
-    }
-    canvas {
-        /*display: block;*/
-        /*margin: auto;*/
-        /*border: 1px solid;*/
-        /*width: 100vw;*/
-        position: fixed;
-    }
-    #scroll_container {
-        position: absolute;
-        overflow-y: scroll;
-        width: 100vw;
-        height: 100vh;
-        z-index: 2;
-    }
-    #scroll_height {
-        height: 3000px;
-        width: 100vw;
-        /*top: 0px;*/
-        /*overflow-y: scroll;*/
-        /*position: absolute;*/
-    }
-    .dg.ac {
-        z-index: 3;
-    }
-</style>
-
-<script type="x-webgl/x-vertex-shader" id="vertex-shader">
-attribute vec2 a_position;
-
-void main() {
-    gl_Position = vec4(a_position, 0, 1);
-}
-</script>
-
-<script type="x-webgl/x-fragment-shader" id="compute-shader">
-precision mediump float;
-uniform sampler2D u_image;
-uniform vec2 u_size;
-uniform float scale;
-uniform float time;
-uniform int decay;
-
-const float F = 0.037, K = 0.06;
-//const float F = 0.029, K = 0.057;
-//const float F = 0.062, K = 0.061;
-
-float D_a = 0.2*scale, D_b = 0.1*scale;
-
-const float TIMESTEP = 1.0;
-
-float rand(vec2 co) {
-    return fract(sin(dot(co.xy, vec2(12.9898,78.233))) * (43758.5453 + time));
-}
-
-void main() {
-    vec2 p = gl_FragCoord.xy,
-         n = p + vec2(0.0, 1.0),
-         e = p + vec2(1.0, 0.0),
-         s = p + vec2(0.0, -1.0),
-         w = p + vec2(-1.0, 0.0);
-
-    vec4 val = texture2D(u_image, p / u_size);
-
-    vec4 lap = texture2D(u_image, n / u_size)
-        + texture2D(u_image, e / u_size)
-        + texture2D(u_image, s / u_size)
-        + texture2D(u_image, w / u_size)
-        - 4.0 * val;
-
-    vec4 delta = vec4(D_a * lap.x - val.x*val.y*val.y + F * (1.0-val.x),
-                      D_b * lap.y + val.x*val.y*val.y - (K+F) * val.y,
-                      D_a * lap.z - val.z*val.w*val.w + F * (1.0-val.z),
-                      D_b * lap.w + val.z*val.w*val.w - (K+F) * val.w);
-
-    val += delta * TIMESTEP;
-
-    if (decay == 1 && abs(rand(gl_FragCoord.xy)) < 0.000001) {
-        val.x *= 0.5;
-        val.z *= 0.5;
-    }
-
-    /*  Make the two systems mutually exclusive by having the dominant
-        suppress the other.
-    */
-    if (val.y > val.w) {
-        gl_FragColor = vec4(val.x, val.y, val.z, val.w/2.0);
-    } else {
-        gl_FragColor = vec4(val.x, val.y/2.0, val.z, val.w);
-    }
-}
-</script>
-
-<script type="x-webgl/x-fragment-shader" id="render-shader">
-precision mediump float;
-uniform sampler2D u_image;
-uniform vec2 u_size;
-uniform int show;
-uniform vec4 colorA;
-uniform vec4 colorB;
-
-const float COLOR_MIN = 0.15, COLOR_MAX = 0.3;
-//const float COLOR_MIN = 0.0, COLOR_MAX = 1.0;
-
-const vec4 WHITE = vec4( 1.0, 1.0, 1.0, 1.0 );
-
-float remap( float minval, float maxval, float curval ) {
-    return ( curval - minval ) / ( maxval - minval );
-}
-
-void main() {
-    vec4 pixel = texture2D(u_image, gl_FragCoord.xy / u_size);
-    float v1 = remap(COLOR_MIN, COLOR_MAX, pixel.y);
-    float v2 = remap(COLOR_MIN, COLOR_MAX, pixel.w);
-
-    if (show == 1) {
-        gl_FragColor = mix( WHITE, colorA, v1 );
-    } else if (show == 2) {
-        gl_FragColor = mix( WHITE, colorB, v2 );
-    } else if (show == 3) {
-        if (v2 < v1) {
-            gl_FragColor = mix( WHITE, colorA, v1 );
-        } else {
-            gl_FragColor = mix( WHITE, colorB, v2 );
-        }
-    } else {
-        gl_FragColor = vec4(1, 1, 1, 1);
-    }
-}
-</script>
-
+<html lang="en">
 <head>
-    <script type='text/javascript' src='gl_utils.js'></script>
-    <script type='text/javascript' src='lib/dat.gui.min.js'></script>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>Morphogen</title>
+    <script src="./bundle.js" type="module"></script>
+    <style>
+        #container {
+            width: 100vw;
+            height: 100vh;
+            overflow: scroll;
+            -webkit-overflow-scrolling: touch;
+            position: absolute;
+            z-index: 10;
+            /*pointer-events: none;*/
+        }
+        #inner_container {
+            width: 100%;
+            height: 500vh;
+            position: absolute;
+            text-align: center;
+            z-index: 10;
+        }
+        #test {
+            display: inline-block;
+            margin: auto;
+            margin-top: 400vh;
+            background-color: transparent;
+            text-align: center;
+        }
+        #test p {
+            font-size: 64px;
+            margin: 10px;
+        }
+
+    </style>
 </head>
-
 <body>
-
-    <div id="scroll_container">
-        <div id="scroll_height"></div>
+    <div id='container'>
+        <div id='inner_container'>
+            <div id='test'>
+                <p>
+                    Hello World
+                </p>
+            </div>
+        </div>
     </div>
-    <canvas id="canvas"></canvas>
 
-
-    <script type='text/javascript' src='index.js'></script>
 </body>

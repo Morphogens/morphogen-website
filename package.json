@@ -4,14 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "watchify -d index.js -o bundle.js",
+    "build": "browserify index.js -o bundle.js"
   },
-  "author": "",
+  "author": "Joel Simon",
   "license": "ISC",
   "dependencies": {
-    "fail-nicely": "^2.0.0",
-    "glslify": "^7.0.0",
-    "image-promise": "^6.0.0",
-    "regl": "^1.3.11"
   }
 }

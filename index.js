@@ -1,9 +1,4 @@
-// var createControls = require('./controls');
-// const normalize = require('gl-vec3/normalize')
-const glsl = require('glslify')
-const loadImage = require('image-promise')
-
-
+const loadImage = require('./lib/image-promise.js')
 function random_list(size) {
     const result = [];
     for (var i = 0; i < size; i++) {
@@ -20,7 +15,7 @@ function interpolate(a, b, v) {
     ]
 }
 
-require('regl')({
+const regl = require('./lib/regl.min.js')({
     pixelRatio: 1.0,
     extensions: [
         'oes_texture_float',
@@ -31,8 +26,9 @@ require('regl')({
     attributes: {
         antialias: false
     },
-    onDone: require('fail-nicely')(main)
+    // onDone: main
 });
+main(regl)
 
 function main(regl) {
     let w;
@@ -75,12 +71,8 @@ function main(regl) {
         const state_colors = [
             [[.98, .98, .98, 1.0], purple],
             [[0, 0.0, .9, 1.0], [.92, .92, .92, 1.0]],
-            // [purple, purple],
             [red, red]
         ]
-
-
-        // console.log('onload')
 
         let colorA = state_colors[0][0]
         let colorB = state_colors[0][1]
@@ -151,7 +143,6 @@ function main(regl) {
             }
             colorA = interpolate(state_colors[scroll_idx][0], state_colors[scroll_idx+1][0], foo)
             colorB = interpolate(state_colors[scroll_idx][1], state_colors[scroll_idx+1][1], foo)
-            // console.log(scroll_percent, colorA)
         }
 
         container.addEventListener('scroll', (event) => {

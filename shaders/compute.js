@@ -1,5 +1,3 @@
-const glsl = require('glslify')
-
 module.exports = (regl) => {
     return regl({
         vert: `
@@ -11,7 +9,7 @@ module.exports = (regl) => {
                 gl_Position = vec4(xy, 0, 1);
             }
         `,
-        frag: glsl`
+        frag: `
             precision mediump float;
             uniform sampler2D u_src;
             uniform vec2 u_size;

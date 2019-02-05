@@ -3,27 +3,28 @@ module.exports = (regl) => {
         vert: `
             precision mediump float;
             attribute vec2 xy;
-            varying vec2 vUv;
+            varying vec2 uv;
             void main () {
-                vUv = xy * 0.5 + 0.5;
+                uv = xy * 0.5 + 0.5;
+                uv.y = 1.0-uv.y;
                 gl_Position = vec4(xy, 0, 1);
             }
         `,
         frag: `
             precision mediump float;
-            varying vec2 vUv;
+            varying vec2 uv;
             uniform vec4 rect;
 
             void main () {
-                if (vUv.x < rect.x) discard;
-                if (vUv.x > rect.z) discard;
-                if (vUv.y > 1.0 - rect.y) discard;
-                if (vUv.y < 1.0 - rect.w) discard;
+                if (uv.x < rect.x) discard;
+                if (uv.x > rect.z) discard;
+                if (uv.y > 1.0 - rect.y) discard;
+                if (uv.y < 1.0 - rect.w) discard;
                 gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
-                // if (vUv.y == 1.0 - rect.y) {
-                //     // gl_FragColor = vec4(rand(vUv, 1.0), rand(vUv, 2.0)*0.25, rand(vUv, 2.0), rand(vUv, 3.0)*0.25);
+                // if (uv.y == 1.0 - rect.y) {
+                //     // gl_FragColor = vec4(rand(uv, 1.0), rand(uv, 2.0)*0.25, rand(uv, 2.0), rand(uv, 3.0)*0.25);
                 // } else {
-                //     // gl_FragColor = vec4(rand(vUv, 1.0), rand(vUv, 2.0)*0.25, rand(vUv, 2.0), rand(vUv, 3.0)*0.25);
+                //     // gl_FragColor = vec4(rand(uv, 1.0), rand(uv, 2.0)*0.25, rand(uv, 2.0), rand(uv, 3.0)*0.25);
                 //     // gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
                 // }
             }

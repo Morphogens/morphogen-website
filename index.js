@@ -139,6 +139,9 @@ function main(regl) {
 
             let p = (scroll_percent)
             let foo
+            if (scroll_idx == 0) {
+                foo = p
+            }
             if (p < 0.25) {
                 foo = 0
             } else if (p > 0.75) {

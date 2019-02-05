@@ -6,7 +6,7 @@ module.exports = (regl) => {
             varying vec2 uv;
             void main () {
                 uv = xy * 0.5 + 0.5;
-                uv.y = 1.0 - uv.y;
+                // uv.y = 1.0 - uv.y;
                 gl_Position = vec4(xy, 0, 1);
             }
         `,
@@ -29,6 +29,11 @@ module.exports = (regl) => {
 
                 /* Clear morph2 to allow morph1 to grow.
                 */
+
+                if (old_bound && new_bound) {
+
+                }
+
                 if (!new_bound) {
                     result.zw = vec2(1.0, 0.0);
                 }
@@ -46,8 +51,10 @@ module.exports = (regl) => {
                 }
 
                 if (new_bound) {
-                // if (!old_bound && new_bound || old_seed) {
-                    if (rand.y > 0.9) {
+                    if (old_bound) {
+                        result.zw = oldv.zw;
+                    }
+                    else if (rand.y > 0.9) {
                         result.zw = vec2(0.5, 0.25);
                     } else {
                         result.zw = vec2(1.0, 0.0);

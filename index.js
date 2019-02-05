@@ -11,9 +11,17 @@ function random_list(size) {
     }
     return result
 }
+function interpolate(a, b, v) {
+    return [
+        (1-v)*a[0]+ v*b[0],
+        (1-v)*a[1]+ v*b[1],
+        (1-v)*a[2]+ v*b[2],
+        (1-v)*a[3]+ v*b[3]
+    ]
+}
 
 require('regl')({
-    pixelRatio: 0.9,
+    pixelRatio: 1.0,
     extensions: [
         'oes_texture_float',
     ],
@@ -43,31 +51,35 @@ function main(regl) {
     const compute = require('./shaders/compute.js')(regl)
     const draw = require('./shaders/draw.js')(regl)
 
+    console.time('load_images')
     Promise.all([
-        loadImage('imgs/title_mobile.png'),
-        loadImage('imgs/gen_design.png')
-    ]).then( images => {
+        Promise.all([
+            loadImage('imgs/title.png'),
+            loadImage('imgs/gen_design.png')
+        ]),
+        Promise.all([
+            loadImage('imgs/title_mobile.png'),
+            loadImage('imgs/gen_design_mobile.png')
+        ]),
 
-        const textures = images.map(regl.texture)
+    ]).then(([ images, mobile_images ]) => {
+        console.timeEnd('load_images')
+
+        const portrait_textures = mobile_images.map(regl.texture)
+        const landscape_textures = images.map(regl.texture)
+        let textures = landscape_textures
+
         const purple = [128/255, 66/255, 244/255, 1.0]
         const red = [214/255, 44/255, 98/255, 1.0]
 
         const state_colors = [
-
-            [[.95, .95, .95, 1.0], purple],
-            [[0, 0.0, .9, 1.0], [.95, .95, .95, 1.0]],
+            [[.98, .98, .98, 1.0], purple],
+            [[0, 0.0, .9, 1.0], [.92, .92, .92, 1.0]],
             // [purple, purple],
             [red, red]
         ]
 
-        function interpolate(a, b, v) {
-            return [
-                (1-v)*a[0]+ v*b[0],
-                (1-v)*a[1]+ v*b[1],
-                (1-v)*a[2]+ v*b[2],
-                (1-v)*a[3]+ v*b[3]
-            ]
-        }
+
         // console.log('onload')
 
         let colorA = state_colors[0][0]
@@ -78,7 +90,6 @@ function main(regl) {
 
         function scroll_index() {
             const step = container.scrollHeight / images.length
-            // const step = window.innerHeight * 2
             const y = container.scrollTop
             const idx = Math.min(Math.floor(y / step), images.length -1)
             const percent = (y - idx*step) / step
@@ -93,6 +104,9 @@ function main(regl) {
             console.log('restart')
             w = Math.floor(regl._gl.canvas.width * scale);
             h = Math.floor(regl._gl.canvas.height * scale);
+            console.log(w, h)
+            textures = w > 1200 ? landscape_textures : portrait_textures
+
             states = [0, 1].map(i => (states[i] || regl.framebuffer)({
                 colorType: regl.hasExtension('oes_texture_half_float') ? 'half float' : 'float',
                 width: w,
@@ -104,9 +118,10 @@ function main(regl) {
               data: random_list(512*256*4)
             })
             initialize({ dst: states[0], texture: textures[0], random});
+            update_scroll()
         }
 
-        container.addEventListener('scroll', (event) => {
+        function update_scroll() {
             [scroll_idx, scroll_percent] = scroll_index()
             if (scroll_idx != last_scroll_idx) {
                 console.log('transition', last_scroll_idx, scroll_idx)
@@ -131,11 +146,13 @@ function main(regl) {
             } else {
                 foo = (p-0.25) * 2.0
             }
-            console.log({scroll_percent, foo})
-            // const p = Math.max(0.0, (1.0- 1.6 * scroll_percent))
             colorA = interpolate(state_colors[scroll_idx][0], state_colors[scroll_idx+1][0], foo)
             colorB = interpolate(state_colors[scroll_idx][1], state_colors[scroll_idx+1][1], foo)
             // console.log(scroll_percent, colorA)
+        }
+
+        container.addEventListener('scroll', (event) => {
+            update_scroll()
         })
 
         restart()

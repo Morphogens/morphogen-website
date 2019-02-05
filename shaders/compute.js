@@ -37,8 +37,8 @@ module.exports = (regl) => {
 
                 val += vec4(D_a * lap.x - val.x*val.y*val.y + F * (1.0-val.x),
                             D_b * lap.y + val.x*val.y*val.y - (K+F) * val.y,
-                            D_a * lap.z - val.z*val.w*val.w + F * (1.0-val.z),
-                            D_b * lap.w + val.z*val.w*val.w - (K+F) * val.w);
+                            1.5*D_a * lap.z - val.z*val.w*val.w + F * (1.0-val.z),
+                            1.5*D_b * lap.w + val.z*val.w*val.w - (K+F) * val.w);
 
                 /*  Make the two systems mutually exclusive by having the
                     dominant suppress the other. */

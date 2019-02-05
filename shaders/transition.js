@@ -46,6 +46,7 @@ module.exports = (regl) => {
                 }
 
                 if (new_bound) {
+                // if (!old_bound && new_bound || old_seed) {
                     if (rand.y > 0.9) {
                         result.zw = vec2(0.5, 0.25);
                     } else {

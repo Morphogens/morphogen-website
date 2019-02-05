@@ -36,13 +36,7 @@ module.exports = (regl) => {
         attributes: {xy: [-4, -4, 0, 4, 4, -4]},
         uniforms: {
             texture: regl.prop('texture'),
-            random: regl.prop('random'),
-            // texture: regl.texture(images[0]),
-            // random: regl.texture({
-            //   width: 512,
-            //   height: 256,
-            //   data: random_list(512*256*4)
-            // })
+            random: regl.prop('random')
         },
         framebuffer: regl.prop('dst'),
         depth: { enable: false },

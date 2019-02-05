@@ -56,10 +56,10 @@ module.exports = (regl) => {
             }
         `,
         uniforms: {
-            colorA: hexToRgb("#0000e0"),
-            colorB: hexToRgb("#e3e3ff"),
+            colorA: regl.prop('colorA'),//hexToRgb("#0000e0"),
+            colorB: regl.prop('colorB'),
             src: regl.prop('src'),
-            show: 1,
+            show: 3,
         },
         attributes: {xy: [-4, -4, 0, 4, 4, -4]},
         depth: {enable: false},

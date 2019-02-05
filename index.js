@@ -83,7 +83,7 @@ function main(regl) {
         function scroll_index() {
             const step = container.scrollHeight / images.length
             const y = container.scrollTop
-            const idx = Math.min(Math.floor(y / step), images.length -1)
+            const idx = Math.max(0, Math.min(Math.floor(y / step), images.length -1))
             const percent = (y - idx*step) / step
             return [ idx, percent ]
         }

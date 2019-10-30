@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title></title>
+
+<style>
+    body { font-family: sans-serif; }
+    canvas {
+        display: block;
+        margin: auto;
+        border: 1px solid;
+        max-width: 100vw;
+    }
+</style>
+
+<body>
+<script>
+    let [ W, H ]= [ 256, 256 ]
+
+    let canvas = document.createElement("canvas")
+    document.body.appendChild(canvas)
+    let ctx = canvas.getContext("2d")
+
+    canvas.id = "canvas";
+    canvas.width = W;
+    canvas.height = H;
+
+    // ctx.font = "100px Arial";
+    ctx.font = "90px Verdana";
+
+    ctx.fillStyle = 'red';
+    ctx.fillRect(0, 0, W, H);
+
+    const offset_x = 42
+    const offset_y = 75
+    const margin = 0
+    const c_width = (W - 4*margin) / 3
+    const c_height = (H - 4*margin) / 3
+    ctx.fillStyle = '#00FF00';
+    ctx.textAlign = "center";
+
+    "MORPHOGEN".split('').forEach((char, idx) => {
+        const col = idx % 3
+        const row = Math.floor(idx / 3)
+        const x = offset_x + margin + col*c_width
+        const y = offset_y + margin + row*c_width
+        // console.log(x, y)
+        // const scale_x = 1-(ctx.measureText(char).width / c_width)
+        console.log(ctx.measureText(char).width , c_width)
+        // ctx.save()
+        // ctx.scale(1.1, 1.0)
+        ctx.fillText(char, x, y)
+        // ctx.restore()
+    })
+
+
+</script>
+</body>
+

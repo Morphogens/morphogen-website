@@ -1,4 +1,3 @@
-import { makeRandGLSL } from './utils'
 export default function(regl) {
     return regl({
         vert: `
@@ -18,8 +17,6 @@ export default function(regl) {
             const float F = 0.037, K = 0.06;
             const vec2 center = vec2(0.5, 0.5);
             
-            ${makeRandGLSL}
-
             void main() {
                 float radius = 2.0 * distance(uv, center);
                 radius = pow(radius, 2.0); // Exponential

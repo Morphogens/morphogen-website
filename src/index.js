@@ -77,7 +77,20 @@ async function main(_, regl) {
             height: h,
             depthStencil: false
         }))
-        initialize({ dst: states[0], texture: textures[0] });
+        let duv = [0, -0.0]
+        let suv = [1, 1.]
+        if (w > h) {
+            let d = w - h
+            let s = d / w
+            suv[0] = 1/(1-s)
+            duv[0] = - s/2
+        } else {
+            let d = h - w
+            let s = d / h
+            suv[1] = 1/(1-s)
+            duv[1] = - s/2
+        }
+        initialize({ duv, suv, dst: states[0], texture: textures[0] });
         update_scroll()
     }
 

@@ -14,14 +14,14 @@ export default function(regl) {
         frag: `
             precision mediump float;
             uniform sampler2D texture;
-            // uniform sampler2D random;
+            uniform vec2 duv;
+            uniform vec2 suv;
             varying vec2 uv;
             
             ${makeRandGLSL}
 
             void main () {
-                vec4 val = texture2D(texture, uv);
-                // vec4 rand = texture2D(random, uv);
+                vec4 val = texture2D(texture, (uv+duv)*suv);
                 vec4 result = vec4(1.0, 0.0, 1.0, 0.0);
                 float rand = makeRand(uv);
                 if (val.g > 0.5 && rand > .75) {
@@ -37,7 +37,8 @@ export default function(regl) {
         attributes: {xy: [-4, -4, 0, 4, 4, -4]},
         uniforms: {
             texture: regl.prop('texture'),
-            // random: regl.prop('random')
+            duv: regl.prop('duv'),
+            suv: regl.prop('suv'),
         },
         framebuffer: regl.prop('dst'),
         depth: { enable: false },

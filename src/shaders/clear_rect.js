@@ -1,4 +1,4 @@
-module.exports = (regl) => {
+export default function(regl) {
     return regl({
         vert: `
             precision mediump float;

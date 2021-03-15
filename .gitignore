@@ -1,2 +1,5 @@
-THREE/
 node_modules/
+docs/
+build/
+archive/
+.DS_Store

@@ -4,12 +4,17 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "watchify -d index.js -o bundle.js",
-    "build": "browserify index.js -o bundle.js"
+    "start": "esbuild src/index.js --servedir=. --outdir=build/ --bundle",
+    "build": "esbuild src/index.js --minify --bundle > build/bundle.js",
+    "__start": "snowpack dev",
+    "__build": "snowpack build"
   },
   "author": "Joel Simon",
   "license": "ISC",
   "dependencies": {
+    "regl": "^2.1.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.9.2"
   }
 }

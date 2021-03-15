@@ -1,15 +1,4 @@
-
-function hexToRgb(hex) {
-    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    if (!result) { return null }
-    return  [
-        parseInt(result[1], 16) / 255.0,
-        parseInt(result[2], 16) / 255.0,
-        parseInt(result[3], 16) / 255.0,
-        1.0
-    ]
-}
-module.exports = (regl) => {
+export default function(regl) {
     return regl({
         vert: `
             precision mediump float;
@@ -25,42 +14,31 @@ module.exports = (regl) => {
             precision mediump float;
             varying vec2 uv;
             uniform sampler2D src;
-            uniform int show;
+            // uniform int show;
             uniform vec4 colorA;
             uniform vec4 colorB;
-
+            uniform vec4 background;
             const float COLOR_MIN = 0.15, COLOR_MAX = 0.3;
-            const vec4 WHITE = vec4( 1.0, 1.0, 1.0, 1.0 );
-
+            // const vec4 WHITE = vec4( 1.0, 1.0, 1.0, 1.0 );
             float remap( float minval, float maxval, float curval ) {
-                return ( curval - minval ) / ( maxval - minval );
+                return clamp(( curval - minval ) / ( maxval - minval ), 0.0, 1.0);
             }
-
             void main() {
                 vec4 pixel = texture2D(src, uv);
                 float v1 = remap(COLOR_MIN, COLOR_MAX, pixel.y);
                 float v2 = remap(COLOR_MIN, COLOR_MAX, pixel.w);
-
-                if (show == 1) {
-                    gl_FragColor = mix( WHITE, colorA, v1 );
-                } else if (show == 2) {
-                    gl_FragColor = mix( WHITE, colorB, v2 );
-                } else if (show == 3) {
-                    if (v2 < v1) {
-                        gl_FragColor = mix( WHITE, colorA, v1 );
-                    } else {
-                        gl_FragColor = mix( WHITE, colorB, v2 );
-                    }
+                if (v1 > v2) {
+                    gl_FragColor = mix(background, colorA, v1);
                 } else {
-                    gl_FragColor = vec4(1, 1, 1, 1);
+                    gl_FragColor = mix(background, colorB, v2);
                 }
             }
         `,
         uniforms: {
             colorA: regl.prop('colorA'),//hexToRgb("#0000e0"),
             colorB: regl.prop('colorB'),
+            background: regl.prop('background'),
             src: regl.prop('src'),
-            show: 3,
         },
         attributes: {xy: [-4, -4, 0, 4, 4, -4]},
         depth: {enable: false},

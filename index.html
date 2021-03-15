@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
     <!-- Global site tag (gtag.js) - Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=UA-101632858-4"></script>
     <script>
@@ -9,12 +10,8 @@
         gtag('js', new Date());
         gtag('config', 'UA-101632858-4');
     </script>
-
-    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-    <meta content="width=device-width, initial-scale=0.6, maximum-scale=1.5, user-scalable=no" name="viewport" />
-
     <title>Morphogen</title>
-    <script src="./bundle.js" type="module"></script>
+    <script src="build/index.js" type="module"></script>
     <style>
         body {
             margin: 0px;
@@ -38,6 +35,8 @@
             z-index: 10;
         }
         .content {
+            width: fit-content;
+            max-width: 80vw;
             display: inline-block;
             background-color: transparent;
             text-align: center;
@@ -50,14 +49,16 @@
             font-size: 64px;
             font-family: 'Avenir', sans-serif;
             font-weight: normal;
+            word-break: break-all;
         }
-        #test {
-            max-width: 300px;
+        #info-container {
+            text-align: left;
+            /* max-width: 300px; */
         }
-        #test a {
+        #info-container a {
             color: black;
         }
-        #test p {
+        #info-container p {
             margin: 10px;
         }
 
@@ -66,11 +67,9 @@
 <body>
     <div id='container'>
         <div id='inner_container'>
-            <div id='test' class='content'>
-                <a href="mailto:joelsimon6@gmail.com">
-                <p>
-                    Contact
-                </p>
+            <div id='info-container' class='content'>
+                <a href="mailto:info@morphogen.io">
+                <p>info@morphogen.io</p>
                 </a>
             </div>
         </div>

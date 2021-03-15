@@ -1,4 +1,6 @@
-module.exports = (regl) => {
+import { makeRandGLSL } from './utils'
+
+export default function(regl) {
     return regl({
         vert: `
             precision mediump float;
@@ -17,6 +19,9 @@ module.exports = (regl) => {
             uniform sampler2D new_texture;
             uniform sampler2D random;
             varying vec2 uv;
+
+            ${makeRandGLSL}
+
             void main () {
                 vec4 oldv = texture2D(u_src, uv);
                 bool old_text = oldv.y > 0.2;
@@ -25,7 +30,8 @@ module.exports = (regl) => {
                 bool old_seed = texture2D(old_texture, uv).g > 0.2;
                 bool old_bound = texture2D(old_texture, uv).r > 0.2;
                 vec4 result = oldv;
-                vec4 rand = texture2D(random, uv);
+                // vec4 rand = makeRand(uv);
+                // (random, uv);
 
                 /* Clear morph2 to allow morph1 to grow.
                 */
@@ -39,7 +45,7 @@ module.exports = (regl) => {
                 }
 
                 if (new_seed) {
-                    if (rand.x > 0.8) {
+                    if (makeRand(uv) > 0.8) {
                         result.xy = vec2(0.5, 0.25);
                     } else {
                         result.xy = vec2(1.0, 0.0);
@@ -54,7 +60,7 @@ module.exports = (regl) => {
                     if (old_bound) {
                         result.zw = oldv.zw;
                     }
-                    else if (rand.y > 0.9) {
+                    else if (makeRand(uv * 2.0) > 0.9) {
                         result.zw = vec2(0.5, 0.25);
                     } else {
                         result.zw = vec2(1.0, 0.0);
@@ -68,8 +74,8 @@ module.exports = (regl) => {
             u_src: regl.prop('src'),
             old_texture: regl.prop('old_texture'),
             new_texture: regl.prop('new_texture'),
-            random: regl.prop('random')
-            // regl.texture({
+            // random: regl.prop('random')
+            // random: regl.texture({
             //     width: 512, height: 256, data: random_list(512*256*4)
             // })
         },

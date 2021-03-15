@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "esbuild src/index.js --servedir=. --outdir=build/ --bundle",
-    "build": "esbuild src/index.js --minify --bundle > build/index.js",
+    "start": "esbuild src/index.js --servedir=. --outdir=www/ --bundle",
+    "build": "esbuild src/index.js --minify --bundle > www/index.js",
     "__start": "snowpack dev",
     "__build": "snowpack build"
   },

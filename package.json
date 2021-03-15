@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "esbuild src/index.js --servedir=. --outdir=build/ --bundle",
-    "build": "esbuild src/index.js --minify --bundle > build/bundle.js",
+    "build": "esbuild src/index.js --minify --bundle > build/index.js",
     "__start": "snowpack dev",
     "__build": "snowpack build"
   },

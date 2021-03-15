@@ -16,15 +16,16 @@ async function main(_, regl) {
     let scale = 1.0;
     let states = []
     let itersPerFrame = 5
-    const GRAY = [.90, .90, .90, 1.0]
-    const PURPLE = [128/255, 66/255, 244/255, 1.0]
+    const GRAY = [.85, .85, .85, 1.0]
+    // const PURPLE = [128/255, 66/255, 244/255, 1.0]
+    const PURPLE = hexToRgb('A642F4')
     // const RED = [214/255, 44/255, 98/255, 1.0]
     // const BLUE = [0, 0.0, .9, 1.0]
     const WHITE = [.95, .95, .95, 1.0]
     const state_colors = [
-        [ PURPLE, WHITE, hexToRgb('D2BCFB')],
-        [ hexToRgb('F9E1E9'), hexToRgb('D62C62'), hexToRgb('FCF0F4')],
-        [ hexToRgb('D62C62'), hexToRgb('D62C62'), hexToRgb('FCF0F4')],
+        [ PURPLE, WHITE, hexToRgb('E2C2FE')],
+        [ hexToRgb('F9E1E9'), hexToRgb('D62C62'), hexToRgb('F9E1E9')],
+        [ hexToRgb('D62C62'), hexToRgb('D62C62'), hexToRgb('F9E1E9')],
     ]
     let [colorA, colorB, background] = state_colors[0]
 
@@ -37,18 +38,8 @@ async function main(_, regl) {
     const draw = drawFn(regl)
 
     console.time('load_images')
-    const [ images, mobile_images ] = await Promise.all([
-        Promise.all([
-            loadImage('imgs/M4.png'),
-            // loadImage('imgs/title_sq.png'),
-            // loadImage('imgs/gen_design.png')
-        ]),
-        // Promise.all([
-        //     // loadImage('imgs/M4.png'),
-        //     loadImage('imgs/title_mobile.png'),
-        //     // loadImage('imgs/gen_design_mobile.png')
-        // ]),
-
+    const images = await Promise.all([
+        loadImage('imgs/M.png'),
     ])
     console.timeEnd('load_images')
     // const portrait_textures = mobile_images.map(regl.texture)

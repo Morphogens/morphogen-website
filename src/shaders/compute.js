@@ -19,8 +19,8 @@ export default function(regl) {
             
             void main() {
                 float radius = 2.0 * distance(uv, center);
-                radius = pow(radius, 2.0); // Exponential
-                float scale = mix(1.0, .85, radius);
+                // radius = pow(radius, 1.0); // Exponential
+                float scale = mix(1.05, .85, radius);
                 float D_a = 0.1*scale;
                 float D_b = 0.05;
                 float f = F;
@@ -54,12 +54,10 @@ export default function(regl) {
                 } else {
                     gl_FragColor = vec4(val.x, val.y/2.0, val.z, val.w);
                 }
-                // gl_FragColor = vec4(radius, 0.0, 0.0, 1.0);
             }
         `,
         attributes: {xy: [-4, -4, 0, 4, 4, -4]},
         uniforms: {
-            // scale: 0.5,
             u_src: regl.prop('src'),
             u_size: ctx => [1 / ctx.framebufferWidth, 1 / ctx.framebufferHeight],
         },

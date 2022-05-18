@@ -1,5 +1,14 @@
 export default function(regl) {
     return regl({
+        uniforms: {
+            F: regl.prop('F'),
+            K: regl.prop('K'),
+            scaleA: regl.prop('scaleA'),
+            scaleB: regl.prop('scaleB'),
+            diffusionScale: regl.prop('diffusionScale'),
+            u_src: regl.prop('src'),
+            u_size: ctx => [1 / ctx.framebufferWidth, 1 / ctx.framebufferHeight],
+        },
         vert: `
             precision mediump float;
             attribute vec2 xy;
@@ -13,19 +22,24 @@ export default function(regl) {
             precision mediump float;
             uniform sampler2D u_src;
             uniform vec2 u_size;
+            uniform float F;
+            uniform float K;
+            uniform float scaleA;
+            uniform float scaleB;
+            uniform float diffusionScale;
             varying vec2 uv;
-            const float F = 0.037, K = 0.06;
+            // const float F = 0.037, K = 0.06;
             const vec2 center = vec2(0.5, 0.5);
             
             void main() {
                 float radius = 2.0 * distance(uv, center);
                 // radius = pow(radius, 1.0); // Exponential
-                float scale = mix(1.05, .85, radius);
-                float D_a = 0.1*scale;
-                float D_b = 0.05;
+                // float scale = mix(1.05, .85, radius);
+                
+                float scale = mix(scaleA, scaleB, radius);
+                float D_a = diffusionScale * 0.1*scale;
+                float D_b = diffusionScale * 0.05;
                 float f = F;
-                // float k = K;
-                // float f = mix(1.0 * F, 0.8 * F, radius*1.2);
                 float k = mix(1.0 * K, 1.03 * K, radius);
 
                 vec4 n = texture2D(u_src, uv + vec2(0.0, 1.0)*u_size),
@@ -57,10 +71,6 @@ export default function(regl) {
             }
         `,
         attributes: {xy: [-4, -4, 0, 4, 4, -4]},
-        uniforms: {
-            u_src: regl.prop('src'),
-            u_size: ctx => [1 / ctx.framebufferWidth, 1 / ctx.framebufferHeight],
-        },
         framebuffer: regl.prop('dst'),
         depth: { enable: false },
         count: 3

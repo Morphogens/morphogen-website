@@ -1,6 +1,7 @@
 import REGL from 'regl'
 import { loadImage, lerp, hexToHSV, rgbToHSV, hsv2hex } from './utils'
 import { clearCircleFn, clearRectFn, initFn, transitionFn, computeFn, drawFn } from './shaders'
+import * as dat from 'dat.gui';
 
 REGL({
     pixelRatio: 1.0,
@@ -16,45 +17,98 @@ async function main(_, regl) {
     let scale = 1.0;
     let states = []
     let itersPerFrame = 5
+    
+
+    const palette = {
+        chem1A: '#A642F4',
+        chem1B: '#F9E1E9',
+        // chem2A: '#f2f2f2',
+        // chem2B: '#f2306d',
+        chem2A: { h: 341 / 360, s: .0, v: .95 },
+        chem2B: { h: 341 / 360, s: .8, v: .95 },
+        backgroundA: '#E2C2FE',
+        backgroundB: '#F9E1E9',
+    };
+    const computeParams = {
+        F: 0.037,
+        K: 0.06,
+        scaleA: 1.05,
+        scaleB: .85,
+        diffusionScale: 1.0
+    }// for solid colors do {f: .036, k: .053}
+    const initializeParams = {
+        probabilityA: .25,
+        probabilityB: .25,
+        loadMask: function () {
+            document.getElementById('myInput').click()
+        }
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('debug')) {
+        const gui = new dat.GUI()
+        const folder1 = gui.addFolder('Colors');
+        for (const name of Object.keys(palette)) {
+            folder1.addColor(palette, name)
+        }
+        
+        const folder2 = gui.addFolder('ReactionDiffusion');
+        folder2.add(computeParams, 'F', .01, .06)
+        folder2.add(computeParams, 'K', .01, .2)
+        folder2.add(computeParams, 'scaleA', .2, 2)
+        folder2.add(computeParams, 'scaleB', .2, 2)
+        folder2.add(computeParams, 'diffusionScale', .6, 2)
+
+        const folder3 = gui.addFolder('Initialization');
+
+        folder3.add(initializeParams, 'probabilityA', .1, .5)
+        folder3.add(initializeParams, 'probabilityB', .1, .5)
+        folder3.add(initializeParams, 'loadMask').name('Load Mask file');
+        gui.domElement.parentElement.style.zIndex = 99
+        const obj = { Restart: function () { restart() } };
+        gui.add(obj, 'Restart');
+    }
     // const PURPLE = [128/255, 66/255, 244/255, 1.0]
     const PURPLE = hexToHSV('A642F4')
-    // const WHITE = rgbToHSV([.95, .95, .95, 1.0])
-    const WHITE_HSV = [341/360, .0, .95, 1.0]
-    const RED_HSV = [341/360, .80, .95, 1.0]
+    const WHITE_HSV = [341 / 360, .0, .95]
+    const RED_HSV = [341 / 360, .80, .95]
 
     // const RED = [214/255, 44/255, 98/255, 1.0]
     // const BLUE = [0, 0.0, .9, 1.0]
     // const GRAY = [.85, .85, .85, 1.0]
     const state_colors = [
         [PURPLE, WHITE_HSV, hexToHSV('E2C2FE')],
-        // [PURPLE, WHITE_HSV, hexToHSV('E2C2FE')],
         [hexToHSV('F9E1E9'), RED_HSV, hexToHSV('F9E1E9')],
-        // [PURPLE, WHITE, hexToHSV('E2C2FE')],
-        // [hexToHSV('F9E1E9'), hexToHSV('D62C62'), hexToHSV('F9E1E9')],
-        // [hexToHSV('D62C62'), hexToHSV('D62C62'), hexToHSV('F9E1E9')],
     ]
-    console.log(state_colors);
-    let [colorA, colorB, background] = state_colors[0]
+    // console.log(state_colors);
+    // let [colorA, colorB, background] = state_colors[0]
+    let colorA, colorB, background
+
+    // console.log(WHITE_HSV, hexToHSV(hsv2hex(WHITE_HSV)));
+    // console.log(hsv2hex(WHITE_HSV), hsv2hex(RED_HSV));
 
     const container = document.getElementById('container')
 
-    // const scrollContent = document.querySelectorAll('.scroll-content')
-    // let info_container = document.getElementById('info-container')
-
-    // const clear_rect = clearRectFn(regl)
     const clear_circle = clearCircleFn(regl)
-    // const transition = transitionFn(regl)
     const initialize = initFn(regl)
     const compute = computeFn(regl)
     const draw = drawFn(regl)
 
-    // console.time('load_images')
-    const images = await Promise.all([ loadImage('imgs/M.png') ])
-    // console.timeEnd('load_images')
-    // const portrait_textures = mobile_images.map(regl.texture)
+    const images = await Promise.all([loadImage('imgs/M.png')])
     const landscape_textures = images.map(regl.texture)
     let textures = landscape_textures
 
+    document.getElementById('myInput').addEventListener("change", function () {
+        const files = document.getElementById('myInput').files[0]
+        if (files) {
+            const fileReader = new FileReader();
+            fileReader.readAsDataURL(files);
+            fileReader.addEventListener("load", async function () {
+                const image = await loadImage(this.result)
+                textures = [regl.texture(image)]
+            })
+        }
+    })
     // const [ start_sidx, start_scroll_percent ] = scroll_index()
     // console.log(start_sidx);
     // let last_sidx = start_sidx
@@ -98,10 +152,25 @@ async function main(_, regl) {
             suv[1] = 1 / (1 - s)
             duv[1] = - s / 2
         }
-        initialize({ duv, suv, dst: states[0], texture: textures[0] });
+        initialize({
+            duv, suv,
+            dst: states[0],
+            texture: textures[0],
+            ...initializeParams
+        });
         update_scroll()
     }
 
+    function lerpHSV(a, b, v) {
+        return {
+            h: (1 - v) * a.h + v * b.h,
+            s: (1 - v) * a.s + v * b.s,
+            v: (1 - v) * a.v + v * b.v
+        }
+    }
+    function hsvArray({ h, s, v }) {
+        return [h / 1, s, v]
+    }
     function update_scroll() {
         // const [sidx, scroll_percent] = scroll_index()
         // if (sidx != last_sidx) {
@@ -117,9 +186,18 @@ async function main(_, regl) {
         // let v = scroll_percent
         const sidx = 0
         const v = getScrollPercent()
-        colorA = lerp(state_colors[sidx][0], state_colors[sidx + 1][0], v)
-        colorB = lerp(state_colors[sidx][1], state_colors[sidx + 1][1], v)
-        background = lerp(state_colors[sidx][2], state_colors[sidx + 1][2], v)
+
+        colorA = lerp(hexToHSV(palette.chem1A), hexToHSV(palette.chem1B), v)
+        colorB = hsvArray(lerpHSV(palette.chem2A, palette.chem2B, v))
+        background = lerp(hexToHSV(palette.backgroundA), hexToHSV(palette.backgroundB), v)
+
+        colorA = [...colorA, 1]
+        colorB = [...colorB, 1]
+        background = [...background, 1]
+        // console.log(hexToHSV(palette.backgroundA), background);
+        // colorA = lerp(state_colors[sidx][0], state_colors[sidx + 1][0], v)
+        // background = lerp(state_colors[sidx][2], state_colors[sidx + 1][2], v)
+        // console.log(lerpHSV(palette.color1, palette.color2, v));
     }
     let mouse = null
     let mouseDown = false
@@ -146,12 +224,13 @@ async function main(_, regl) {
     })
     regl.frame(({ tick, time }) => {
         update_scroll()
+
         for (let i = 0; i < itersPerFrame; i++) {
-            compute({ src: states[0], dst: states[1] })
-            compute({ src: states[1], dst: states[0] })
+            compute({ src: states[0], dst: states[1], ...computeParams })
+            compute({ src: states[1], dst: states[0], ...computeParams })
         }
         if (mouse && mouseDown) {
-            clear_circle({ 
+            clear_circle({
                 position: mouse,
                 fillIndex: 0,
                 dst: states[0],
@@ -174,7 +253,10 @@ async function main(_, regl) {
         //         })
         //     })
         // }
-        draw({ colorA, colorB, background, src: states[0] })
+        draw({
+            colorA, colorB, background,
+            src: states[0]
+        })
         // console.log(colorB, hsv2hex(colorB));
         // document.body.style.background = hsv2hex(colorB)
     })

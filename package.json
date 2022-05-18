@@ -12,6 +12,7 @@
   "author": "Joel Simon",
   "license": "ISC",
   "dependencies": {
+    "dat.gui": "^0.7.9",
     "regl": "^2.1.0"
   },
   "devDependencies": {

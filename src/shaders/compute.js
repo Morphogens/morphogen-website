@@ -1,3 +1,5 @@
+import { noise3 } from './utils/noise'
+
 export default function(regl) {
     return regl({
         uniforms: {
@@ -6,8 +8,12 @@ export default function(regl) {
             scaleA: regl.prop('scaleA'),
             scaleB: regl.prop('scaleB'),
             diffusionScale: regl.prop('diffusionScale'),
+            noiseSpeed: regl.prop('noiseSpeed'),
+            noiseStrength: regl.prop('noiseStrength'),
+            noiseDensity: regl.prop('noiseDensity'),
             u_src: regl.prop('src'),
             u_size: ctx => [1 / ctx.framebufferWidth, 1 / ctx.framebufferHeight],
+            time: ({ tick }) => tick
         },
         vert: `
             precision mediump float;
@@ -27,10 +33,18 @@ export default function(regl) {
             uniform float scaleA;
             uniform float scaleB;
             uniform float diffusionScale;
+            uniform float time;
             varying vec2 uv;
+
+            uniform float noiseSpeed;
+            uniform float noiseStrength;
+            uniform float noiseDensity;
+
             // const float F = 0.037, K = 0.06;
             const vec2 center = vec2(0.5, 0.5);
             
+            ${noise3}
+
             void main() {
                 float radius = 2.0 * distance(uv, center);
                 // radius = pow(radius, 1.0); // Exponential
@@ -41,6 +55,12 @@ export default function(regl) {
                 float D_b = diffusionScale * 0.05;
                 float f = F;
                 float k = mix(1.0 * K, 1.03 * K, radius);
+
+                float noise = simplex3d_fractal(
+                    vec3(uv, time * noiseSpeed) * noiseDensity + 8.0
+                );
+                
+                k += noise * noiseStrength;
 
                 vec4 n = texture2D(u_src, uv + vec2(0.0, 1.0)*u_size),
                      e = texture2D(u_src, uv + vec2(1.0, 0.0)*u_size),

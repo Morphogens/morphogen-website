@@ -34,7 +34,12 @@ async function main(_, regl) {
         K: 0.06,
         scaleA: 1.05,
         scaleB: .85,
-        diffusionScale: 1.0
+        diffusionScale: 1.0,
+
+        noiseSpeed: .01,
+        noiseStrength: .0,
+        noiseDensity: 4
+
     }// for solid colors do {f: .036, k: .053}
     const initializeParams = {
         probabilityA: .25,
@@ -50,7 +55,6 @@ async function main(_, regl) {
             if (urlParams[k] && typeof obj[k] == 'number') {
                 urlParams[k] = parseFloat(urlParams[k])
             } 
-            // console.log(k, urlParams[k], typeof urlParams[k]);
             obj[k] = urlParams[k] ?? v
         }
     }
@@ -88,6 +92,9 @@ async function main(_, regl) {
         folder2.add(computeParams, 'scaleA', .2, 2).onChange(updateParams)
         folder2.add(computeParams, 'scaleB', .2, 2).onChange(updateParams)
         folder2.add(computeParams, 'diffusionScale', .6, 2).onChange(updateParams)
+        folder2.add(computeParams, 'noiseSpeed', .0, .01).onChange(updateParams)
+        folder2.add(computeParams, 'noiseStrength', .0, .05).onChange(updateParams)
+        folder2.add(computeParams, 'noiseDensity', 1, 20).onChange(updateParams)
 
         const folder3 = gui.addFolder('Initialization');
 

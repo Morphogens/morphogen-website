@@ -11,6 +11,7 @@ export default function(regl) {
             noiseSpeed: regl.prop('noiseSpeed'),
             noiseStrength: regl.prop('noiseStrength'),
             noiseDensity: regl.prop('noiseDensity'),
+            mouse: regl.prop('mouse'),
             u_src: regl.prop('src'),
             u_size: ctx => [1 / ctx.framebufferWidth, 1 / ctx.framebufferHeight],
             time: ({ tick }) => tick
@@ -34,6 +35,7 @@ export default function(regl) {
             uniform float scaleB;
             uniform float diffusionScale;
             uniform float time;
+            uniform vec2 mouse;
             varying vec2 uv;
 
             uniform float noiseSpeed;
@@ -44,6 +46,11 @@ export default function(regl) {
             const vec2 center = vec2(0.5, 0.5);
             
             ${noise3}
+            
+            float distSquared(vec2 A, vec2 B) {
+                vec2 C = A - B;
+                return dot(C, C);
+            }
 
             void main() {
                 float radius = 2.0 * distance(uv, center);
@@ -60,7 +67,12 @@ export default function(regl) {
                     vec3(uv, time * noiseSpeed) * noiseDensity + 8.0
                 );
                 
-                k += noise * noiseStrength;
+                float mouseRadius = .05;
+                if (distSquared(mouse, uv) < mouseRadius * mouseRadius) {
+                    k += .01 + noise * .2;
+                } else {
+                    k += noise * noiseStrength;
+                }
 
                 vec4 n = texture2D(u_src, uv + vec2(0.0, 1.0)*u_size),
                      e = texture2D(u_src, uv + vec2(1.0, 0.0)*u_size),

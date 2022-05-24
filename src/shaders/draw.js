@@ -19,8 +19,11 @@ export default function(regl) {
             uniform vec4 colorA;
             uniform vec4 colorB;
             uniform vec4 background;
+            uniform float colorMin;
+            uniform float colorMax;
+
             // const float COLOR_MIN = 0.15, COLOR_MAX = 0.3;
-            const float COLOR_MIN = 0.15, COLOR_MAX = 0.3;
+            // const float COLOR_MIN = 0.0, COLOR_MAX = 0.1;
             
             ${hsv2rgb}
 
@@ -30,8 +33,8 @@ export default function(regl) {
             
             void main() {
                 vec4 pixel = texture2D(src, uv);
-                float v1 = remap(COLOR_MIN, COLOR_MAX, pixel.y);
-                float v2 = remap(COLOR_MIN, COLOR_MAX, pixel.w);
+                float v1 = remap(colorMin, colorMax, pixel.y);
+                float v2 = remap(colorMin, colorMax, pixel.w);
                 if (v1 > v2) {
                     // gl_FragColor = hsv2rgb(mix(background, colorA, v1));
                     gl_FragColor = mix(hsv2rgb(background), hsv2rgb(colorA), v1);
@@ -46,6 +49,8 @@ export default function(regl) {
         uniforms: {
             colorA: regl.prop('colorA'),
             colorB: regl.prop('colorB'),
+            colorMin: regl.prop('colorMin'),
+            colorMax: regl.prop('colorMax'),
             background: regl.prop('background'),
             src: regl.prop('src'),
         },

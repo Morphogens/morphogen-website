@@ -28,6 +28,8 @@ async function main(_, regl) {
         chem2B: "#f2306d",// { h: 341 / 360, s: .8, v: .95 },
         backgroundA: '#E2C2FE',
         backgroundB: '#F9E1E9',
+        colorMin: .15,
+        colorMax: .3,
     };
     const computeParams = {
         F: 0.037,
@@ -66,8 +68,6 @@ async function main(_, regl) {
         const queryParams = new URLSearchParams({
             ...palette,
             ...computeParams,
-            // chem2A: hsvObjToHex(palette.chem2A),
-            // chem2B: hsvObjToHex(palette.chem2B),
             probabilityA: initializeParams.probabilityA,
             probabilityB: initializeParams.probabilityB
         }).toString()
@@ -83,7 +83,11 @@ async function main(_, regl) {
         const folder1 = gui.addFolder('Colors');
 
         for (const name of Object.keys(palette)) {
-            folder1.addColor(palette, name).onChange(updateParams)
+            if (typeof palette[name] == 'string') {
+                folder1.addColor(palette, name).onChange(updateParams)
+            } else {
+                folder1.add(palette, name, .0, 0.5).onChange(updateParams)
+            }
         }
 
         const folder2 = gui.addFolder('ReactionDiffusion');
@@ -238,7 +242,7 @@ async function main(_, regl) {
         // background = lerp(state_colors[sidx][2], state_colors[sidx + 1][2], v)
         // console.log(lerpHSV(palette.color1, palette.color2, v));
     }
-    let mouse = null
+    let mouse = [-1, -1]
     let mouseDown = false
     document.addEventListener('mousemove', (event) => {
         mouse = [event.clientX / window.innerWidth, event.clientY / window.innerHeight]
@@ -263,11 +267,12 @@ async function main(_, regl) {
     })
     regl.frame(({ tick, time }) => {
         update_scroll()
-
+        // if (mouse) {
         for (let i = 0; i < itersPerFrame; i++) {
-            compute({ src: states[0], dst: states[1], ...computeParams })
-            compute({ src: states[1], dst: states[0], ...computeParams })
+            compute({ src: states[0], dst: states[1], mouse: [-1, -1], ...computeParams })
+            compute({ src: states[1], dst: states[0], mouse: [-1, -1], ...computeParams })
         }
+        // }
         if (mouse && mouseDown) {
             clear_circle({
                 position: mouse,
@@ -293,7 +298,9 @@ async function main(_, regl) {
         //     })
         // }
         draw({
-            colorA, colorB, background,
+            colorA, colorB, background, 
+            colorMin: palette.colorMin,
+            colorMax: palette.colorMax,
             src: states[0]
         })
         // console.log(colorB, hsv2hex(colorB));

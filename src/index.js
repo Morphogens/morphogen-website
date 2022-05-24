@@ -1,5 +1,5 @@
 import REGL from 'regl'
-import { loadImage, lerp, hexToHSV, rgbToHSV, hsv2hex } from './utils'
+import { loadImage, lerp, hexToHSV, rgbToHSV, hsv2hex, hsvObjToHex, hexToRgb } from './utils'
 import { clearCircleFn, clearRectFn, initFn, transitionFn, computeFn, drawFn } from './shaders'
 import * as dat from 'dat.gui';
 
@@ -17,15 +17,15 @@ async function main(_, regl) {
     let scale = 1.0;
     let states = []
     let itersPerFrame = 5
-    
+
+    const urlParamsRaw = new URLSearchParams(window.location.search);
+    const urlParams = Object.fromEntries(urlParamsRaw.entries())
 
     const palette = {
         chem1A: '#A642F4',
         chem1B: '#F9E1E9',
-        // chem2A: '#f2f2f2',
-        // chem2B: '#f2306d',
-        chem2A: { h: 341 / 360, s: .0, v: .95 },
-        chem2B: { h: 341 / 360, s: .8, v: .95 },
+        chem2A: "#f2f2f2",//{ h: 341 / 360, s: .0, v: .95 },
+        chem2B: "#f2306d",// { h: 341 / 360, s: .8, v: .95 },
         backgroundA: '#E2C2FE',
         backgroundB: '#F9E1E9',
     };
@@ -44,25 +44,56 @@ async function main(_, regl) {
         }
     }
 
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has('debug')) {
+
+    for (const obj of [palette, computeParams, initializeParams]) {
+        for (let [k, v] of Object.entries(obj)) {
+            if (urlParams[k] && typeof obj[k] == 'number') {
+                urlParams[k] = parseFloat(urlParams[k])
+            } 
+            // console.log(k, urlParams[k], typeof urlParams[k]);
+            obj[k] = urlParams[k] ?? v
+        }
+    }
+
+    
+    function updateParams() {
+        // console.log(hsvObjToHex(palette.chem2A))
+        // console.log(hsvObjToHex(palette.chem2B))
+        const queryParams = new URLSearchParams({
+            ...palette,
+            ...computeParams,
+            // chem2A: hsvObjToHex(palette.chem2A),
+            // chem2B: hsvObjToHex(palette.chem2B),
+            probabilityA: initializeParams.probabilityA,
+            probabilityB: initializeParams.probabilityB
+        }).toString()
+        if (window.history.pushState) { 
+            const newURL = new URL(window.location.href)
+            newURL.search = '?' + queryParams;
+            window.history.replaceState({ path: newURL.href }, '', newURL.href);
+        }
+    }
+
+    if (Array.from(urlParamsRaw).length) {
         const gui = new dat.GUI()
         const folder1 = gui.addFolder('Colors');
+
         for (const name of Object.keys(palette)) {
-            folder1.addColor(palette, name)
+            folder1.addColor(palette, name).onChange(updateParams)
         }
-        
+
         const folder2 = gui.addFolder('ReactionDiffusion');
-        folder2.add(computeParams, 'F', .01, .06)
-        folder2.add(computeParams, 'K', .01, .2)
-        folder2.add(computeParams, 'scaleA', .2, 2)
-        folder2.add(computeParams, 'scaleB', .2, 2)
-        folder2.add(computeParams, 'diffusionScale', .6, 2)
+        folder2.add(computeParams, 'F', .01, .06).onChange(updateParams)
+        folder2.add(computeParams, 'K', .01, .2).onChange(updateParams)
+        folder2.add(computeParams, 'scaleA', .2, 2).onChange(updateParams)
+        folder2.add(computeParams, 'scaleB', .2, 2).onChange(updateParams)
+        folder2.add(computeParams, 'diffusionScale', .6, 2).onChange(updateParams)
 
         const folder3 = gui.addFolder('Initialization');
 
-        folder3.add(initializeParams, 'probabilityA', .1, .5)
-        folder3.add(initializeParams, 'probabilityB', .1, .5)
+        folder3.add(initializeParams, 'probabilityA', .1, .5).onChange(updateParams)
+        folder3.add(initializeParams, 'probabilityB', .1, .5).onChange(updateParams)
+
         folder3.add(initializeParams, 'loadMask').name('Load Mask file');
         gui.domElement.parentElement.style.zIndex = 99
         const obj = { Restart: function () { restart() } };
@@ -188,7 +219,8 @@ async function main(_, regl) {
         const v = getScrollPercent()
 
         colorA = lerp(hexToHSV(palette.chem1A), hexToHSV(palette.chem1B), v)
-        colorB = hsvArray(lerpHSV(palette.chem2A, palette.chem2B, v))
+        colorB = rgbToHSV(lerp(hexToRgb(palette.chem2A), hexToRgb(palette.chem2B), v))
+        // colorB = hsvArray(lerpHSV(palette.chem2A, palette.chem2B, v))
         background = lerp(hexToHSV(palette.backgroundA), hexToHSV(palette.backgroundB), v)
 
         colorA = [...colorA, 1]

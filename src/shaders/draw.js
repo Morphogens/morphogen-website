@@ -19,12 +19,13 @@ export default function(regl) {
             uniform vec4 colorA;
             uniform vec4 colorB;
             uniform vec4 background;
+            // const float COLOR_MIN = 0.15, COLOR_MAX = 0.3;
             const float COLOR_MIN = 0.15, COLOR_MAX = 0.3;
             
             ${hsv2rgb}
 
             float remap( float minval, float maxval, float curval ) {
-                return clamp(( curval - minval ) / ( maxval - minval ), 0.0, 1.0);
+                return clamp(( curval - minval ) / ( maxval - minval ), 0.0, .999);
             }
             
             void main() {
@@ -32,15 +33,11 @@ export default function(regl) {
                 float v1 = remap(COLOR_MIN, COLOR_MAX, pixel.y);
                 float v2 = remap(COLOR_MIN, COLOR_MAX, pixel.w);
                 if (v1 > v2) {
-                    gl_FragColor = hsv2rgb(mix(background, colorA, v1));
-                    // gl_FragColor = hsv2rgb(colorA);
-
-                    // gl_FragColor = mix(hsv2rgb(background), hsv2rgb(colorA), v1);
+                    // gl_FragColor = hsv2rgb(mix(background, colorA, v1));
+                    gl_FragColor = mix(hsv2rgb(background), hsv2rgb(colorA), v1);
                 } else {
-                    gl_FragColor = hsv2rgb(mix(background, colorB, v2));
-                    // gl_FragColor = hsv2rgb(colorB);
-
-                    // gl_FragColor = mix(hsv2rgb(background), hsv2rgb(colorB), v2);
+                    // gl_FragColor = hsv2rgb(mix(background, colorB, v2));
+                    gl_FragColor = mix(hsv2rgb(background), hsv2rgb(colorB), v2);
                 }
                 // gl_FragColor = hsv2rgb(colorB);
                 // gl_FragColor = hsv2rgb(mix(background, colorA, .5));

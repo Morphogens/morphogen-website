@@ -111,3 +111,6 @@ export function rgb2hex(rgba) {
 export function hsv2hex(hsv) {
     return rgb2hex(hsv2rgb(hsv))
 }
+export function hsvObjToHex({h, s, v}) {
+    return rgb2hex(hsv2rgb([h, s, v]))
+}

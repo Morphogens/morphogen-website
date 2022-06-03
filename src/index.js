@@ -95,10 +95,10 @@ async function main(_, regl) {
         folder2.add(computeParams, 'K', .01, .2).onChange(updateParams)
         folder2.add(computeParams, 'scaleA', .2, 2).onChange(updateParams)
         folder2.add(computeParams, 'scaleB', .2, 2).onChange(updateParams)
-        folder2.add(computeParams, 'diffusionScale', .6, 2).onChange(updateParams)
+        folder2.add(computeParams, 'diffusionScale', .3, 2).onChange(updateParams)
         folder2.add(computeParams, 'noiseSpeed', .0, .01).onChange(updateParams)
         folder2.add(computeParams, 'noiseStrength', .0, .05).onChange(updateParams)
-        folder2.add(computeParams, 'noiseDensity', 1, 20).onChange(updateParams)
+        folder2.add(computeParams, 'noiseDensity', .2, 20).onChange(updateParams)
 
         const folder3 = gui.addFolder('Initialization');
 

@@ -16,7 +16,7 @@ async function main(_, regl) {
     let h;
     let scale = 1.0;
     let states = []
-    let itersPerFrame = 5
+    // let stepsPerFrame = 5
 
     const urlParamsRaw = new URLSearchParams(window.location.search);
     const urlParams = Object.fromEntries(urlParamsRaw.entries())
@@ -40,9 +40,10 @@ async function main(_, regl) {
 
         noiseSpeed: .01,
         noiseStrength: .0,
-        noiseDensity: 4
-
-    }// for solid colors do {f: .036, k: .053}
+        noiseDensity: 4,
+        stepsPerFrame: 2,
+    }
+    // for solid colors do {f: .036, k: .053}
     const initializeParams = {
         probabilityA: .25,
         probabilityB: .25,
@@ -63,13 +64,11 @@ async function main(_, regl) {
 
     
     function updateParams() {
-        // console.log(hsvObjToHex(palette.chem2A))
-        // console.log(hsvObjToHex(palette.chem2B))
         const queryParams = new URLSearchParams({
             ...palette,
             ...computeParams,
             probabilityA: initializeParams.probabilityA,
-            probabilityB: initializeParams.probabilityB
+            probabilityB: initializeParams.probabilityB,
         }).toString()
         if (window.history.pushState) { 
             const newURL = new URL(window.location.href)
@@ -99,6 +98,7 @@ async function main(_, regl) {
         folder2.add(computeParams, 'noiseSpeed', .0, .01).onChange(updateParams)
         folder2.add(computeParams, 'noiseStrength', .0, .05).onChange(updateParams)
         folder2.add(computeParams, 'noiseDensity', .2, 20).onChange(updateParams)
+        folder2.add(computeParams, 'stepsPerFrame', 1, 6, 1).onChange(updateParams)
 
         const folder3 = gui.addFolder('Initialization');
 
@@ -114,20 +114,14 @@ async function main(_, regl) {
     const PURPLE = hexToHSV('A642F4')
     const WHITE_HSV = [341 / 360, .0, .95]
     const RED_HSV = [341 / 360, .80, .95]
-
     // const RED = [214/255, 44/255, 98/255, 1.0]
     // const BLUE = [0, 0.0, .9, 1.0]
     // const GRAY = [.85, .85, .85, 1.0]
-    const state_colors = [
-        [PURPLE, WHITE_HSV, hexToHSV('E2C2FE')],
-        [hexToHSV('F9E1E9'), RED_HSV, hexToHSV('F9E1E9')],
-    ]
-    // console.log(state_colors);
-    // let [colorA, colorB, background] = state_colors[0]
+    // const state_colors = [
+    //     [PURPLE, WHITE_HSV, hexToHSV('E2C2FE')],
+    //     [hexToHSV('F9E1E9'), RED_HSV, hexToHSV('F9E1E9')],
+    // ]
     let colorA, colorB, background
-
-    // console.log(WHITE_HSV, hexToHSV(hsv2hex(WHITE_HSV)));
-    // console.log(hsv2hex(WHITE_HSV), hsv2hex(RED_HSV));
 
     const container = document.getElementById('container')
 
@@ -267,12 +261,10 @@ async function main(_, regl) {
     })
     regl.frame(({ tick, time }) => {
         update_scroll()
-        // if (mouse) {
-        for (let i = 0; i < itersPerFrame; i++) {
+        for (let i = 0; i < computeParams.stepsPerFrame; i++) {
             compute({ src: states[0], dst: states[1], mouse: [-1, -1], ...computeParams })
             compute({ src: states[1], dst: states[0], mouse: [-1, -1], ...computeParams })
         }
-        // }
         if (mouse && mouseDown) {
             clear_circle({
                 position: mouse,
@@ -303,8 +295,6 @@ async function main(_, regl) {
             colorMax: palette.colorMax,
             src: states[0]
         })
-        // console.log(colorB, hsv2hex(colorB));
-        // document.body.style.background = hsv2hex(colorB)
     })
     window.addEventListener('resize', restart)
     restart()

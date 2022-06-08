@@ -8,9 +8,15 @@ export default function(regl) {
             scaleA: regl.prop('scaleA'),
             scaleB: regl.prop('scaleB'),
             diffusionScale: regl.prop('diffusionScale'),
-            noiseSpeed: regl.prop('noiseSpeed'),
-            noiseStrength: regl.prop('noiseStrength'),
-            noiseDensity: regl.prop('noiseDensity'),
+            
+            noiseSpeedA: regl.prop('noiseSpeedA'),
+            noiseStrengthA: regl.prop('noiseStrengthA'),
+            noiseDensityA: regl.prop('noiseDensityA'),
+            
+            noiseSpeedB: regl.prop('noiseSpeedB'),
+            noiseStrengthB: regl.prop('noiseStrengthB'),
+            noiseDensityB: regl.prop('noiseDensityB'),
+
             mouse: regl.prop('mouse'),
             u_src: regl.prop('src'),
             u_size: ctx => [1 / ctx.framebufferWidth, 1 / ctx.framebufferHeight],
@@ -38,9 +44,13 @@ export default function(regl) {
             uniform vec2 mouse;
             varying vec2 uv;
 
-            uniform float noiseSpeed;
-            uniform float noiseStrength;
-            uniform float noiseDensity;
+            uniform float noiseSpeedA;
+            uniform float noiseStrengthA;
+            uniform float noiseDensityA;
+
+            uniform float noiseSpeedB;
+            uniform float noiseStrengthB;
+            uniform float noiseDensityB;
 
             // const float F = 0.037, K = 0.06;
             const vec2 center = vec2(0.5, 0.5);
@@ -61,17 +71,23 @@ export default function(regl) {
                 float D_a = diffusionScale * 0.1*scale;
                 float D_b = diffusionScale * 0.05;
                 float f = F;
-                float k = mix(1.0 * K, 1.03 * K, radius);
+                float k_a = mix(1.0 * K, 1.03 * K, radius);
+                float k_b = mix(1.0 * K, 1.03 * K, radius);
 
-                float noise = simplex3d_fractal(
-                    vec3(uv, time * noiseSpeed) * noiseDensity + 8.0
+                float noiseA = simplex3d_fractal(
+                    vec3(uv, time * noiseSpeedA) * noiseDensityA + 8.0
+                );
+                float noiseB = simplex3d_fractal(
+                    vec3(uv, time * noiseSpeedB) * noiseDensityB + 8.0
                 );
                 
                 float mouseRadius = .05;
                 if (distSquared(mouse, uv) < mouseRadius * mouseRadius) {
-                    k += .01 + noise * .2;
+                    k_a += .01 + noiseA * .2;
+                    k_b += .01 + noiseB * .2;
                 } else {
-                    k += noise * noiseStrength;
+                    k_a += noiseA * noiseStrengthA;
+                    k_b += noiseB * noiseStrengthB;
                 }
 
                 vec4 n = texture2D(u_src, uv + vec2(0.0, 1.0)*u_size),
@@ -89,9 +105,9 @@ export default function(regl) {
                 vec4 lap = (0.5 * (n + s + e + w) + 0.25 * (ne + nw + se + sw) - 3.0 * val);
 
                 val += vec4(D_a * lap.x - val.x*val.y*val.y + f * (1.0-val.x),
-                            D_b * lap.y + val.x*val.y*val.y - (k+f) * val.y,
+                            D_b * lap.y + val.x*val.y*val.y - (k_a+f) * val.y,
                             D_a * lap.z - val.z*val.w*val.w + f * (1.0-val.z),
-                            D_b * lap.w + val.z*val.w*val.w - (k+f) * val.w);
+                            D_b * lap.w + val.z*val.w*val.w - (k_b+f) * val.w);
 
                 /*  Make the two systems mutually exclusive by having the
                     dominant suppress the other. */

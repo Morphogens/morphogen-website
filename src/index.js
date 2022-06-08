@@ -16,63 +16,70 @@ async function main(_, regl) {
     let h;
     let scale = 1.0;
     let states = []
-    // let stepsPerFrame = 5
 
     const urlParamsRaw = new URLSearchParams(window.location.search);
     const urlParams = Object.fromEntries(urlParamsRaw.entries())
 
-    const palette = {
-        chem1A: '#A642F4',
-        chem1B: '#F9E1E9',
-        chem2A: "#f2f2f2",//{ h: 341 / 360, s: .0, v: .95 },
-        chem2B: "#f2306d",// { h: 341 / 360, s: .8, v: .95 },
-        backgroundA: '#E2C2FE',
-        backgroundB: '#F9E1E9',
-        colorMin: .15,
-        colorMax: .3,
-    };
-    const computeParams = {
-        F: 0.037,
-        K: 0.06,
-        scaleA: 1.05,
-        scaleB: .85,
-        diffusionScale: 1.0,
-
-        noiseSpeed: .01,
-        noiseStrength: .0,
-        noiseDensity: 4,
-        stepsPerFrame: 2,
-    }
-    // for solid colors do {f: .036, k: .053}
-    const initializeParams = {
-        probabilityA: .25,
-        probabilityB: .25,
-        loadMask: function () {
-            document.getElementById('myInput').click()
+    const options = {
+        colors: {
+            chem1A: '#A642F4',
+            chem1B: '#F9E1E9',
+            chem2A: "#f2f2f2",//{ h: 341 / 360, s: .0, v: .95 },
+            chem2B: "#f2306d",// { h: 341 / 360, s: .8, v: .95 },
+            backgroundA: '#E2C2FE',
+            backgroundB: '#F9E1E9',
+            colorMin: .15,
+            colorMax: .3,
+        },
+        computeParams: {
+            F: 0.037,
+            K: 0.06,
+            scaleA: 1.05,
+            scaleB: .85,
+            diffusionScale: 1.0,
+            stepsPerFrame: 2,
+        },
+        noise: {
+            noiseSpeedA: .01,
+            noiseStrengthA: .0,
+            noiseDensityA: 4,
+            noiseSpeedB: .01,
+            noiseStrengthB: .0,
+            noiseDensityB: 4,
+            
+            // for solid colors do {f: .036, k: .053}
+        },
+        initialize: {
+            probabilityA: .25,
+            probabilityB: .25,
+            loadMask: function () {
+                document.getElementById('myInput').click()
+            }
         }
     }
 
-
-    for (const obj of [palette, computeParams, initializeParams]) {
+    for (const obj of Object.values(options)) {
         for (let [k, v] of Object.entries(obj)) {
             if (urlParams[k] && typeof obj[k] == 'number') {
                 urlParams[k] = parseFloat(urlParams[k])
-            } 
+            }
             obj[k] = urlParams[k] ?? v
         }
     }
 
-    
+
     function updateParams() {
-        const queryParams = new URLSearchParams({
-            ...palette,
-            ...computeParams,
-            probabilityA: initializeParams.probabilityA,
-            probabilityB: initializeParams.probabilityB,
-        }).toString()
-        if (window.history.pushState) { 
+        const queryParams = {}
+        for (const obj of Object.values(options)) {
+            for (let [k, v] of Object.entries(obj)) {
+                if (typeof v == 'number' || typeof v == 'string') {
+                    queryParams[k] = v
+                }
+            }
+        }
+        if (window.history.pushState) {
             const newURL = new URL(window.location.href)
-            newURL.search = '?' + queryParams;
+            newURL.search = '?' +  new URLSearchParams(queryParams).toString()
             window.history.replaceState({ path: newURL.href }, '', newURL.href);
         }
     }
@@ -81,31 +88,36 @@ async function main(_, regl) {
         const gui = new dat.GUI()
         const folder1 = gui.addFolder('Colors');
 
-        for (const name of Object.keys(palette)) {
-            if (typeof palette[name] == 'string') {
-                folder1.addColor(palette, name).onChange(updateParams)
+        for (const name of Object.keys(options.colors)) {
+            console.log(name, options.colors);
+            if (typeof options.colors[name] == 'string') {
+                folder1.addColor(options.colors, name).onChange(updateParams)
             } else {
-                folder1.add(palette, name, .0, 0.5).onChange(updateParams)
+                folder1.add(options.colors, name, .0, 0.5).onChange(updateParams)
             }
         }
 
         const folder2 = gui.addFolder('ReactionDiffusion');
-        folder2.add(computeParams, 'F', .01, .06).onChange(updateParams)
-        folder2.add(computeParams, 'K', .01, .2).onChange(updateParams)
-        folder2.add(computeParams, 'scaleA', .2, 2).onChange(updateParams)
-        folder2.add(computeParams, 'scaleB', .2, 2).onChange(updateParams)
-        folder2.add(computeParams, 'diffusionScale', .3, 2).onChange(updateParams)
-        folder2.add(computeParams, 'noiseSpeed', .0, .01).onChange(updateParams)
-        folder2.add(computeParams, 'noiseStrength', .0, .05).onChange(updateParams)
-        folder2.add(computeParams, 'noiseDensity', .2, 20).onChange(updateParams)
-        folder2.add(computeParams, 'stepsPerFrame', 1, 6, 1).onChange(updateParams)
+        folder2.add(options.computeParams, 'F', .01, .06).onChange(updateParams)
+        folder2.add(options.computeParams, 'K', .01, .2).onChange(updateParams)
+        folder2.add(options.computeParams, 'scaleA', .2, 2).onChange(updateParams)
+        folder2.add(options.computeParams, 'scaleB', .2, 2).onChange(updateParams)
+        folder2.add(options.computeParams, 'diffusionScale', .3, 2).onChange(updateParams)
+        folder2.add(options.computeParams, 'stepsPerFrame', 1, 6, 1).onChange(updateParams)
+
+        const folderNoise = gui.addFolder('noise');
+        folderNoise.add(options.noise, 'noiseSpeedA', .0, .01).onChange(updateParams)
+        folderNoise.add(options.noise, 'noiseStrengthA', .0, .05).onChange(updateParams)
+        folderNoise.add(options.noise, 'noiseDensityA', .2, 20).onChange(updateParams)
+        folderNoise.add(options.noise, 'noiseSpeedB', .0, .01).onChange(updateParams)
+        folderNoise.add(options.noise, 'noiseStrengthB', .0, .05).onChange(updateParams)
+        folderNoise.add(options.noise, 'noiseDensityB', .2, 20).onChange(updateParams)
 
         const folder3 = gui.addFolder('Initialization');
+        folder3.add(options.initialize, 'probabilityA', .1, .5).onChange(updateParams)
+        folder3.add(options.initialize, 'probabilityB', .1, .5).onChange(updateParams)
+        folder3.add(options.initialize, 'loadMask').name('Load Mask file');
 
-        folder3.add(initializeParams, 'probabilityA', .1, .5).onChange(updateParams)
-        folder3.add(initializeParams, 'probabilityB', .1, .5).onChange(updateParams)
-
-        folder3.add(initializeParams, 'loadMask').name('Load Mask file');
         gui.domElement.parentElement.style.zIndex = 99
         const obj = { Restart: function () { restart() } };
         gui.add(obj, 'Restart');
@@ -192,7 +204,7 @@ async function main(_, regl) {
             duv, suv,
             dst: states[0],
             texture: textures[0],
-            ...initializeParams
+            ...options.initialize
         });
         update_scroll()
     }
@@ -208,6 +220,7 @@ async function main(_, regl) {
         return [h / 1, s, v]
     }
     function update_scroll() {
+        const {colors } = options
         // const [sidx, scroll_percent] = scroll_index()
         // if (sidx != last_sidx) {
         //     console.log('transition', last_sidx, sidx)
@@ -223,18 +236,18 @@ async function main(_, regl) {
         const sidx = 0
         const v = getScrollPercent()
 
-        colorA = lerp(hexToHSV(palette.chem1A), hexToHSV(palette.chem1B), v)
-        colorB = rgbToHSV(lerp(hexToRgb(palette.chem2A), hexToRgb(palette.chem2B), v))
-        // colorB = hsvArray(lerpHSV(palette.chem2A, palette.chem2B, v))
-        background = lerp(hexToHSV(palette.backgroundA), hexToHSV(palette.backgroundB), v)
+        colorA = lerp(hexToHSV(colors.chem1A), hexToHSV(colors.chem1B), v)
+        colorB = rgbToHSV(lerp(hexToRgb(colors.chem2A), hexToRgb(colors.chem2B), v))
+        // colorB = hsvArray(lerpHSV(colors.chem2A, colors.chem2B, v))
+        background = lerp(hexToHSV(colors.backgroundA), hexToHSV(colors.backgroundB), v)
 
         colorA = [...colorA, 1]
         colorB = [...colorB, 1]
         background = [...background, 1]
-        // console.log(hexToHSV(palette.backgroundA), background);
+        // console.log(hexToHSV(colors.backgroundA), background);
         // colorA = lerp(state_colors[sidx][0], state_colors[sidx + 1][0], v)
         // background = lerp(state_colors[sidx][2], state_colors[sidx + 1][2], v)
-        // console.log(lerpHSV(palette.color1, palette.color2, v));
+        // console.log(lerpHSV(colors.color1, colors.color2, v));
     }
     let mouse = [-1, -1]
     let mouseDown = false
@@ -261,9 +274,9 @@ async function main(_, regl) {
     })
     regl.frame(({ tick, time }) => {
         update_scroll()
-        for (let i = 0; i < computeParams.stepsPerFrame; i++) {
-            compute({ src: states[0], dst: states[1], mouse: [-1, -1], ...computeParams })
-            compute({ src: states[1], dst: states[0], mouse: [-1, -1], ...computeParams })
+        for (let i = 0; i < options.computeParams.stepsPerFrame; i++) {
+            compute({ src: states[0], dst: states[1], mouse: [-1, -1], ...options.computeParams,  ...options.noise })
+            compute({ src: states[1], dst: states[0], mouse: [-1, -1], ...options.computeParams,  ...options.noise })
         }
         if (mouse && mouseDown) {
             clear_circle({
@@ -290,9 +303,9 @@ async function main(_, regl) {
         //     })
         // }
         draw({
-            colorA, colorB, background, 
-            colorMin: palette.colorMin,
-            colorMax: palette.colorMax,
+            colorA, colorB, background,
+            colorMin: options.colors.colorMin,
+            colorMax: options.colors.colorMax,
             src: states[0]
         })
     })

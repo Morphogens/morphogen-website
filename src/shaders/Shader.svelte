@@ -34,11 +34,11 @@
             // scaleB: .80,
             // scaleA: 1.0,
             // scaleB: .95,
-            diffusionScale: 1.0,
-            stepsPerFrame: 2,
+            diffusionScale: 2.0,
+            stepsPerFrame: 1,
         },
         noise: {
-            noiseSpeedA: .003 / 6,
+            noiseSpeedA: .003 / 5,
             noiseStrengthA: .035,
             noiseDensityA: 1,
 
@@ -59,15 +59,17 @@
     onMount(async () => {
         regl = Regl({
             canvas,
+            pixelRatio: 1.0,
             extensions: ["OES_texture_float"],
-            optionalExtensions: ["OES_element_index_uint"],
+            optionalExtensions: ['oes_texture_half_float'],
+            attributes: { antialias: false },
         });
         const drawFn = makeDrawImage(regl);
         const computeFn = makeComputeFn(regl);
         const initialize = makeInitFn(regl)
 
-        const w = Math.min(2048, 2 * Math.round(width / 2))
-        const h = Math.min(2048, 2 * Math.round(height / 2))
+        const w = Math.min(2048, 1 * Math.round(width / 2))
+        const h = Math.min(2048, 1 * Math.round(height / 2))
         const states = [0, 1].map(i => regl.framebuffer({
             colorType: regl.hasExtension('oes_texture_half_float') ? 'half float' : 'float',
             width: w,
@@ -117,7 +119,7 @@
         width: 100vw;
         height: 100vh;
         /* image-rendering: pixelated; */
-        filter: blur(5px);
+        filter: blur(8px);
         /* opacity: .4; */
     }
 </style>

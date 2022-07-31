@@ -10,16 +10,3 @@
 <p class="morpho-body-text text-left">
     An interactive tool to “paint with words.” It incorporates guidable text-to-image generation into a traditional digital painting interface.
 </p>
-
-
-<!-- </div>
-        </main>
-         -->
-<style>
-    .morpho-body-text {
-        margin-top: 8px;
-        line-height: 40px;
-        font-size: 32px;
-        font-weight: 300;
-    }
-</style>

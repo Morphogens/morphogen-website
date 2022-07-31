@@ -1,3 +1,8 @@
+<script>
+
+import Footer from "../components/Footer.svelte";
+
+</script>
 <main class="text-center">
     <div>
         <p class="morpho-body-text text-left">
@@ -6,7 +11,7 @@
         </p>
     </div>
 </main>
-
+<Footer />
 
 <style>
     .morpho-body-text {

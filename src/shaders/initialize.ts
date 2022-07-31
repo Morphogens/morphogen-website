@@ -9,7 +9,13 @@ export default function (regl) {
             suv: regl.prop('suv'),
             probabilityA: regl.prop('probabilityA'),
             probabilityB: regl.prop('probabilityB'),
-            time: () => window.performance.now()
+            time: () => {
+                // window.performance.now()
+                const now = new Date()  
+                console.log((now.getTime() % 100) / 100);
+                
+                return (now.getTime() % 100) / 100
+            }
         },
         vert: `
             precision mediump float;
@@ -33,8 +39,6 @@ export default function (regl) {
             ${makeRandGLSL}
             ${noise3}
 
-            
-            
             void main () {
                 // vec4 val = texture2D(texture, (uv+duv)*suv);
                 vec4 result = vec4(1.0, 0.0, 1.0, 0.0);
@@ -45,15 +49,11 @@ export default function (regl) {
                 //  &&  < .5
                 float dist = length(uv - vec2(.5, .5));
                 // && noiseA - (.1 * dist) > .2
-                if (rand > 0.5) {
+                // noiseA > 0.0 && 
+                if (rand > 0.67) {
                     result.x = 0.5;
                     result.y = 0.25;
                 } 
-
-                // if (uv.y < 0.5 && rand < .25) {
-                //     result.z = 0.5;
-                //     result.w = 0.25;
-                // }
                 gl_FragColor = result;
             }
         `,

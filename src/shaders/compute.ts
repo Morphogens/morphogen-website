@@ -63,18 +63,20 @@ export default function(regl) {
             }
 
             void main() {
-                float radius = 2.0 * distance(uv, center);
+                // float radius = 2.0 * distance(uv, center);
                 // radius = pow(radius, 1.0); // Exponential
                 // float scale = mix(1.05, .85, radius);
                 
-                float scale = mix(scaleA, scaleB, radius);
+                float scale = scaleA;//mix(scaleA, scaleB, radius);
                 // float D_a = diffusionScale * 0.1*scale;
                 // float D_b = diffusionScale * 0.05;
-                float D_a = .2097;
-                float D_b = .105;
+                float D_a = .2097 * 0.5;
+                float D_b = .105 *0.5;
                 float f = F;
-                float k_a = mix(1.0 * K, 1.03 * K, radius);
-                float k_b = mix(1.0 * K, 1.03 * K, radius);
+                // float k_a = mix(1.0 * K, 1.06 * K, radius);
+                // float k_b = mix(1.0 * K, 1.06 * K, radius);
+                float k_a = K;
+                float k_b = K;
 
                 float noiseA = simplex3d_fractal(
                     vec3(uv, time * noiseSpeedA) * noiseDensityA + 8.0

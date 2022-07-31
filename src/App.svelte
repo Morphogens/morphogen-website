@@ -9,8 +9,8 @@
   import Test from "./routes/Test.svelte";
   import Shader from "./shaders/Shader.svelte";
   import Menu from "./components/Menu.svelte";
-  import {menuOpen} from './stores'
-  
+  import { menuOpen } from "./stores";
+
   let Page;
   router("/", () => (Page = Index));
   router("/test", () => (Page = Test));
@@ -24,14 +24,14 @@
 <Shader />
 <Header />
 <svelte:component this={toRender} />
-<Footer />
 
-<style>
-  :global(body) {
+<style global>
+  body {
     padding-left: 24px;
     padding-right: 24px;
+    overflow: auto;
   }
-  :global(h2) {
+  h2 {
     font-size: 48px !important;
     line-height: 42px !important;
     border-bottom: 1px solid;
@@ -39,9 +39,9 @@
     padding-bottom: 24px;
     font-weight: 300 !important;
   }
-  :global(h3) {
-    font-size: 24px !important;
-    line-height: 18px !important;
+  h3 {
+    font-size: 40px !important;
+    line-height: 32px !important;
     /* border-bottom: 1px solid; */
     margin-top: 24px !important;
     padding-bottom: 24px;
@@ -54,6 +54,27 @@
     font-weight: 300;
     padding-bottom: 16px;
     border-bottom: 1px solid;
+  }
+  @media (max-width: 800px) {
+    .morpho-body-text {
+      margin-top: 8px;
+      line-height: 32px;
+      font-size: 24px;
+      font-weight: 300;
+      padding-bottom: 16px;
+    }
+    h2 {
+      font-size: 40px !important;
+      line-height: 36px !important;
+      margin-top: 8px !important;
+      padding-bottom: 16px;
+    }
+    h3 {
+      font-size: 32px !important;
+      line-height: 28px !important;
+      margin-top: 16px !important;
+      padding-bottom: 16px;
+    }
   }
   :global(p::after) {
     content: "";

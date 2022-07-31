@@ -14,8 +14,9 @@
     ].sort()
 </script>
 <h2>Team</h2>
-<p class="morpho-body-text text-left">
+<div class="flex flex-wrap flex-col morpho-body-text">
+    <!-- <p>{team.join(' ')}</p> -->
     {#each team as member}
-        <p class='capitalize'>{member}</p>  
+        <p class='capitalize '>{member}  </p>
     {/each}
-</p>
+</div>

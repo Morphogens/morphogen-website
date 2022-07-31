@@ -70,8 +70,8 @@ export default function(regl) {
                 float scale = scaleA;//mix(scaleA, scaleB, radius);
                 // float D_a = diffusionScale * 0.1*scale;
                 // float D_b = diffusionScale * 0.05;
-                float D_a = .2097 * 0.5;
-                float D_b = .105 *0.5;
+                float D_a = .2097 * 0.6;
+                float D_b = .105 * 0.6;
                 float f = F;
                 // float k_a = mix(1.0 * K, 1.06 * K, radius);
                 // float k_b = mix(1.0 * K, 1.06 * K, radius);

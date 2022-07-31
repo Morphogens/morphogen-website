@@ -55,6 +55,11 @@
     function restart() {
 
     }
+
+    function roundToNearest(v:number, n:number) : number {
+        return Math.round(v / n ) * n
+    }
+
     let regl:Regl.Regl
     onMount(async () => {
         regl = Regl({
@@ -68,8 +73,10 @@
         const computeFn = makeComputeFn(regl);
         const initialize = makeInitFn(regl)
 
-        const w = Math.min(2048, 1 * Math.round(width / 2))
-        const h = Math.min(2048, 1 * Math.round(height / 2))
+        const w = Math.min(2048,  roundToNearest(width * .75, 2))
+        const h = Math.min(2048,  roundToNearest(height * .75, 2))
+        console.log({w, h});
+        
         const states = [0, 1].map(i => regl.framebuffer({
             colorType: regl.hasExtension('oes_texture_half_float') ? 'half float' : 'float',
             width: w,
@@ -118,8 +125,7 @@
         left:0px;
         width: 100vw;
         height: 100vh;
-        /* image-rendering: pixelated; */
-        filter: blur(8px);
+        filter: blur(5px);
         /* opacity: .4; */
     }
 </style>

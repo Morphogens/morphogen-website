@@ -50,7 +50,7 @@ export default function (regl) {
                 float dist = length(uv - vec2(.5, .5));
                 // && noiseA - (.1 * dist) > .2
                 // noiseA > 0.0 && 
-                if (rand > 0.67) {
+                if (rand > 0.6) {
                     result.x = 0.5;
                     result.y = 0.25;
                 } 

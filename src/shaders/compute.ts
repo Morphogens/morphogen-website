@@ -1,4 +1,4 @@
-import { noise3 } from './utils/noise'
+import { noise3 } from './noise'
 
 export default function(regl) {
     return regl({
@@ -68,8 +68,10 @@ export default function(regl) {
                 // float scale = mix(1.05, .85, radius);
                 
                 float scale = mix(scaleA, scaleB, radius);
-                float D_a = diffusionScale * 0.1*scale;
-                float D_b = diffusionScale * 0.05;
+                // float D_a = diffusionScale * 0.1*scale;
+                // float D_b = diffusionScale * 0.05;
+                float D_a = .2097;
+                float D_b = .105;
                 float f = F;
                 float k_a = mix(1.0 * K, 1.03 * K, radius);
                 float k_b = mix(1.0 * K, 1.03 * K, radius);

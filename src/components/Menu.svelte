@@ -14,13 +14,13 @@
             on:click={() => ($menuOpen = false)}
             target="_blank"
             class="flex"
-            href="https://twitter.com/StudioMorphogen">Twitter</a
+            href="https://twitter.com/StudioMorphogen">Twitter ↗</a
         >
         <a
             on:click={() => ($menuOpen = false)}
             target="_blank"
             class="flex"
-            href="https://github.com/Morphogens">Github</a
+            href="https://github.com/Morphogens">GitHub ↗</a
         >
 </div>
 

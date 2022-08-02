@@ -7,7 +7,7 @@ import Footer from "../components/Footer.svelte";
     <div>
         <p class="morpho-body-text text-left">
             We are a group of artists and technologists working to make playful
-            and accesible creative tools out of new technologies.
+            and accessible creative tools out of new technologies.
         </p>
     </div>
 </main>

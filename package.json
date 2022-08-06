@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host",
-    "build": "vite build --outDir docs",
+    "build": "vite build --outDir docs && cp CNAME docs/CNAME",
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.json"
   },

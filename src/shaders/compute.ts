@@ -72,7 +72,8 @@ export default function(regl) {
                 // float D_b = diffusionScale * 0.05;
                 float D_a = .2097 * 0.6;
                 float D_b = .105 * 0.6;
-                float f = F;
+                float f_a = F;
+                float f_b = F;
                 // float k_a = mix(1.0 * K, 1.06 * K, radius);
                 // float k_b = mix(1.0 * K, 1.06 * K, radius);
                 float k_a = K;
@@ -87,8 +88,10 @@ export default function(regl) {
                 
                 float mouseRadius = .05;
                 if (distSquared(mouse, uv) < mouseRadius * mouseRadius) {
-                    k_a += .01 + noiseA * .2;
-                    k_b += .01 + noiseB * .2;
+                    k_a += .02;
+                    k_b += .02;
+                    // f_a *= 1.5;
+                    // f_b += .01;
                 } else {
                     k_a += noiseA * noiseStrengthA;
                     k_b += noiseB * noiseStrengthB;
@@ -108,11 +111,10 @@ export default function(regl) {
 
                 vec4 lap = (0.5 * (n + s + e + w) + 0.25 * (ne + nw + se + sw) - 3.0 * val);
 
-                val += vec4(D_a * lap.x - val.x*val.y*val.y + f * (1.0-val.x),
-                            D_b * lap.y + val.x*val.y*val.y - (k_a+f) * val.y,
-                            D_a * lap.z - val.z*val.w*val.w + f * (1.0-val.z),
-                            D_b * lap.w + val.z*val.w*val.w - (k_b+f) * val.w);
-
+                val += vec4(D_a * lap.x - val.x*val.y*val.y + f_a * (1.0-val.x),
+                            D_b * lap.y + val.x*val.y*val.y - (k_a+f_a) * val.y,
+                            D_a * lap.z - val.z*val.w*val.w + f_b * (1.0-val.z),
+                            D_b * lap.w + val.z*val.w*val.w - (k_b+f_b) * val.w);
                 /*  Make the two systems mutually exclusive by having the
                     dominant suppress the other. */
                 if (val.y > val.w) {

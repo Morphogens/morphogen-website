@@ -5,7 +5,6 @@
   import Research from "./routes/Research.svelte";
   import Team from "./routes/Team.svelte";
   import Header from "./components/Header.svelte";
-  import Footer from "./components/Footer.svelte";
   import Test from "./routes/Test.svelte";
   import Shader from "./shaders/Shader.svelte";
   import Menu from "./components/Menu.svelte";
@@ -31,6 +30,12 @@
     padding-right: 24px;
     overflow: auto;
   }
+  ::selection {
+  background: #ff44fc4b; /* WebKit/Blink Browsers */
+}
+::-moz-selection {
+  background: #ff44fc4b; /* Gecko Browsers */
+}
   h2 {
     font-size: 48px !important;
     line-height: 42px !important;

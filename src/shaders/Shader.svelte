@@ -134,9 +134,17 @@
     bind:innerWidth={width}
     bind:innerHeight={height}
     on:mousemove={(e) => mouse = [e.clientX / window.innerWidth, e.clientY / window.innerHeight]}
+    on:touchmove={(e) => {
+        const touch = e.originalEvent.touches[0] || e.originalEvent.changedTouches[0];
+        const x = touch.pageX;
+        const y = touch.pageY;
+        mouse = [x / window.innerWidth, y / window.innerHeight]
+    }}
     on:mousedown={() => (mousedown = true)}
+    on:touchstart={() => (mousedown = true)}
     on:mouseup={() => (mousedown = false)}
     on:mouseout={() => (mousedown = false)}
+    on:touchend={() => (mousedown = false)}
     on:resize={restart}
 />
 <canvas bind:this={canvas} {width} {height} />

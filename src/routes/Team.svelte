@@ -8,7 +8,7 @@
         ['thomas', 'https://photon.garden/'],
         ['evan', 'http://www.evcasey.com'],
         ['ian', 'https://iandoesallthethings.com'],
-        ['gabe'],
+        ['gabe', 'https://gabe.smedresman.zone'],
         ['tal'],
         ['max', 'https://maxbittker.com/'],
         ['victor']

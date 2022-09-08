@@ -7,7 +7,7 @@
         <a
             on:click={() => ($menuOpen = false)}
             class="flex"
-            href="/{path}">{path}</a
+            href="#{path}">{path}</a
         >
         {/each}
         <a

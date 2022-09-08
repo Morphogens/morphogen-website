@@ -10,10 +10,7 @@ export default function (regl) {
             probabilityA: regl.prop('probabilityA'),
             probabilityB: regl.prop('probabilityB'),
             time: () => {
-                // window.performance.now()
-                const now = new Date()  
-                console.log((now.getTime() % 100) / 100);
-                
+                const now = new Date()                  
                 return (now.getTime() % 100) / 100
             }
         },
